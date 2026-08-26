@@ -1,0 +1,251 @@
+/* ===== InciCare — Hero Factory Flow (decorative, Overview page) ===== */
+/* A simplified, self-contained version of the Smart Factory Topology.
+   One glowing ball travels a closed circuit through the machines;
+   each machine lights up as the ball passes near it. No interaction. */
+
+.hero-factory {
+    position: relative;
+    z-index: 1;
+    margin: 24px 32px 0;
+    padding: 26px 30px 20px;
+    background: linear-gradient(135deg, rgba(26, 35, 50, 0.85), rgba(17, 24, 39, 0.55));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+/* Top accent gradient bar */
+.hero-factory::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #34d399, #60a5fa, #a78bfa, #f472b6);
+    z-index: 2;
+}
+
+/* Ambient glow behind the stage */
+.hero-factory::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: 15%;
+    width: 70%;
+    height: 150%;
+    background: radial-gradient(ellipse, rgba(52, 211, 153, 0.07), transparent 70%);
+    pointer-events: none;
+}
+
+/* --- Heading --- */
+.hero-factory-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.hero-factory-head h2 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #34d399, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-factory-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.hero-factory-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #22d3ee;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.hero-factory-badge .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* --- Stage --- */
+.hero-factory-stage {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    overflow: hidden;
+}
+
+.hero-factory-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hero-factory-machines {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* --- Machine node --- */
+.hfm-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+}
+
+.hfm-circle {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    transform: scale(calc(1 + 0.14 * var(--glow, 0)));
+    transition: transform 0.2s ease, border-color 0.25s ease;
+}
+
+.hfm-icon {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.1));
+}
+
+/* Glow ring — fades in as the ball approaches */
+.hfm-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 16px var(--accent), 0 0 32px rgba(52, 211, 153, 0.5);
+    opacity: var(--glow, 0);
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.hfm-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    white-space: nowrap;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    transition: color 0.25s ease;
+}
+
+.hfm-node[data-active="true"] .hfm-label {
+    color: var(--text-primary);
+}
+
+/* --- Traveling ball --- */
+.hfm-ball {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    z-index: 3;
+    will-change: transform;
+}
+
+.hfm-ball span {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d7fff0, #34d399 45%, #0f7a58);
+    box-shadow: 0 0 12px var(--accent), 0 0 26px rgba(52, 211, 153, 0.7), 0 0 48px rgba(52, 211, 153, 0.35);
+}
+
+/* --- Connection paths --- */
+.hfm-path-fwd {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.55;
+    stroke-dasharray: 10 10;
+    animation: hfmFlow 1.4s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(52, 211, 153, 0.4));
+}
+
+.hfm-path-ret {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.6;
+}
+
+@keyframes hfmFlow {
+    to { stroke-dashoffset: -20; }
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    .hero-factory-stage { height: 260px; }
+    .hfm-circle { width: 54px; height: 54px; font-size: 22px; }
+}
+
+@media (max-width: 640px) {
+    .hero-factory { margin: 16px 16px 0; padding: 20px 18px 14px; }
+    .hero-factory-stage { height: 220px; }
+    .hfm-circle { width: 44px; height: 44px; font-size: 18px; }
+    .hfm-label { display: none; }
+    .hero-factory-head h2 { font-size: 18px; }
+}
+
+/* --- Light theme --- */
+[data-theme="light"] .hero-factory {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(241, 245, 249, 0.75));
+}
+
+[data-theme="light"] .hfm-circle {
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .hfm-label {
+    color: #475569;
+    text-shadow: none;
+}
+
+[data-theme="light"] .hfm-node[data-active="true"] .hfm-label {
+    color: #0f172a;
+}

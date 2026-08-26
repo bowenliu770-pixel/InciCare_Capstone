@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InciCare — Overview</title>
+    <meta name="description" content="InciCare intelligent incident management dashboard. Real-time AI-powered alert monitoring and triage.">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="hero-factory.css">
+</head>
+
+<body>
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay">
+        <form class="modal-content login-modal-content" style="max-width:420px;" onsubmit="event.preventDefault(); submitMailLogin();">
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="font-size:48px; margin-bottom:8px;">🛡️</div>
+                <h2 style="font-size:24px; font-weight:800; background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Welcome Back</h2>
+                <p style="color:#c0c8d4; font-size:14px; margin-top:4px;">Sign in to monitor your incidents</p>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600; color:#e6edf3;">📧 Email Address</label>
+                <input id="mail-email" type="email" class="glow-input"
+                    style="width:100%;padding:12px;margin-top:6px;background:#1a2332;border:2px solid var(--border);color:#fff;border-radius:8px;font-size:14px;transition:all 0.3s;"
+                    placeholder="you@example.com" required autocomplete="off">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:600; color:#e6edf3;">🔑 App Password</label>
+                <div style="position:relative; margin-top:6px;">
+                    <input id="mail-apppwd" type="password" class="glow-input"
+                        style="width:100%;padding:12px 44px 12px 12px;background:#1a2332;border:2px solid var(--border);color:#fff;border-radius:8px;font-size:14px;transition:all 0.3s;"
+                        placeholder="Enter 16-digit app password" required autocomplete="one-time-code">
+                    <button type="button" id="pwd-toggle"
+                        style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#8899aa;font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;"
+                        onclick="togglePassword()" tabindex="-1" title="Show password">👁️</button>
+                </div>
+                <p style="font-size:11px;color:#c0c8d4;margin-top:6px;">Requires Google 2-Step Verification</p>
+            </div>
+            <div id="login-tip" style="color:#f87171;margin-bottom:12px;font-size:13px;min-height:18px;"></div>
+            <button type="submit" class="login-btn" id="login-submit-btn"
+                style="width:100%;padding:12px;background:linear-gradient(135deg, #34d399, #10b981);color:#0a0f1a;border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;">
+                🚀 Start Monitoring
+            </button>
+            <p style="text-align:center; margin-top:16px; font-size:12px; color:#c0c8d4;">
+                🔒 Secure • ⚡ Real-time • 🤖 AI-powered
+            </p>
+        </form>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Custom Confirm Dialog -->
+    <div id="confirm-overlay" class="confirm-overlay">
+        <div class="confirm-dialog">
+            <div class="confirm-icon">✅</div>
+            <h3 class="confirm-title" id="confirm-title">Mark as Finished?</h3>
+            <p class="confirm-body" id="confirm-body">Are you sure you want to mark this incident as finished?</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-btn-cancel" id="confirm-cancel">Cancel</button>
+                <button class="confirm-btn confirm-btn-ok" id="confirm-ok">Yes, Finish It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div>
+                    <h1>Overview</h1>
+                    <span class="subtitle">Incident Feed &amp; Live Monitoring</span>
+                </div>
+            </div>
+        </div>
+        <!-- Profile moved to left sidebar -->
+    </header>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge"><i data-lucide="zap" class="lucide lucide-sm"></i> Live</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" title="Notifications">
+                    <i data-lucide="bell" class="lucide"></i>
+                    <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+                </button>
+                <span id="live-time" class="live-time-text">--:--:--</span>
+                <span class="metric-divider">|</span>
+                <span id="incident-count" class="incident-count-text">0</span>
+                <span class="metric-label">alerts</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notif-panel" style="display:none;">
+        <div class="notif-panel-header">
+            <span>Notifications</span>
+            <button onclick="clearNotifications()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;">Clear all</button>
+        </div>
+        <div class="notif-panel-list" id="notif-list">
+            <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No notifications yet</div>
+        </div>
+    </div>
+
+    <!-- Hero: Animated Factory Topology (decorative) -->
+    <section class="hero-factory">
+        <div class="hero-factory-head">
+            <div>
+                <h2>Your production line, visualized in real time</h2>
+                <p class="hero-factory-sub">Every machine connected · one continuous data flow · incidents tracked live</p>
+            </div>
+            <span class="hero-factory-badge"><span class="pulse-dot"></span> Live Topology</span>
+        </div>
+        <div class="hero-factory-stage" id="hero-factory-stage">
+            <svg class="hero-factory-svg" id="hero-factory-svg"></svg>
+            <div class="hero-factory-machines" id="hero-factory-machines"></div>
+            <div class="hfm-ball" id="hero-factory-ball"><span></span></div>
+        </div>
+    </section>
+
+    <!-- Stats Cards -->
+    <section class="stats-section">
+        <div class="stat-card critical" onclick="filterByTier('1')" style="cursor:pointer;" title="Click to filter Critical incidents">
+            <span class="stat-icon"><i data-lucide="circle-alert" class="lucide icon-tier1"></i></span>
+            <div class="stat-number" id="tier1-count">0</div>
+            <div class="stat-label">Critical — Tier 1</div>
+            <canvas class="stat-sparkline" id="sparkline-t1" width="100" height="36"></canvas>
+            <div style="margin-top:4px; font-size:11px; color:var(--text-muted);">Immediate action required</div>
+        </div>
+        <div class="stat-card medium" onclick="filterByTier('2')" style="cursor:pointer;" title="Click to filter Medium incidents">
+            <span class="stat-icon"><i data-lucide="alert-triangle" class="lucide icon-tier2"></i></span>
+            <div class="stat-number" id="tier2-count">0</div>
+            <div class="stat-label">Medium — Tier 2</div>
+            <canvas class="stat-sparkline" id="sparkline-t2" width="100" height="36"></canvas>
+            <div style="margin-top:4px; font-size:11px; color:var(--text-muted);">Action within 1 hour</div>
+        </div>
+        <div class="stat-card low" onclick="filterByTier('3')" style="cursor:pointer;" title="Click to filter Low incidents">
+            <span class="stat-icon"><i data-lucide="circle-check" class="lucide icon-tier3"></i></span>
+            <div class="stat-number" id="tier3-count">0</div>
+            <div class="stat-label">Low — Tier 3</div>
+            <canvas class="stat-sparkline" id="sparkline-t3" width="100" height="36"></canvas>
+            <div style="margin-top:4px; font-size:11px; color:var(--text-muted);">Routine monitoring</div>
+        </div>
+        <div class="stat-card info" onclick="filterByTier('all')" style="cursor:pointer;" title="Click to show all incidents">
+            <span class="stat-icon"><i data-lucide="bar-chart-3" class="lucide icon-accent"></i></span>
+            <div class="stat-number" id="active-count">0</div>
+            <div class="stat-label">Active Incidents</div>
+            <div class="mini-chart">
+                <div class="chart-bar" id="active-chart" style="width: 0%;"></div>
+            </div>
+            <div style="margin-top:6px; font-size:11px; color:var(--text-muted);" id="active-percentage">0% of total</div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <section class="incident-list" style="grid-column: 1 / -1;">
+            <div class="incident-list-header">
+                <h2>📋 Incident Feed</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="sync-btn" onclick="syncMailbox()" title="Scan mailbox for new emails" id="sync-btn">📬 Sync Mailbox</button>
+                    <button class="refresh-btn" onclick="loadUserIncidents()">⟳ Refresh</button>
+                </div>
+            </div>
+            <!-- Sort Toolbar -->
+            <div class="sort-toolbar">
+                <span style="font-size:12px;color:var(--text-muted);">Sort by:</span>
+                <select class="sort-select" id="sort-field" onchange="applySort()">
+                    <option value="time">Time (Latest)</option>
+                    <option value="tier">Tier</option>
+                    <option value="sla">SLA Remaining</option>
+                    <option value="confidence">AI Confidence</option>
+                    <option value="title">Title</option>
+                </select>
+                <button class="sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="Toggle sort direction">↓ Desc</button>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search by title, description, or ID..."
+                    oninput="handleSearch(this.value)">
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn-emoji active" data-filter="all"><i data-lucide="layers" class="lucide lucide-sm"></i> All Tiers</button>
+                <button class="filter-btn-emoji" data-filter="1"><i data-lucide="circle-alert" class="lucide lucide-sm icon-tier1"></i> Critical</button>
+                <button class="filter-btn-emoji" data-filter="2"><i data-lucide="alert-triangle" class="lucide lucide-sm icon-tier2"></i> Medium</button>
+                <button class="filter-btn-emoji" data-filter="3"><i data-lucide="circle-check" class="lucide lucide-sm icon-tier3"></i> Low</button>
+            </div>
+            <div id="incidents-container">
+                <!-- Incident cards generated by JS -->
+            </div>
+            <!-- Pagination -->
+            <div class="pagination" id="pagination" style="display:none;">
+                <button class="page-btn" id="page-prev" onclick="goPage(-1)">← Previous</button>
+                <span class="page-info" id="page-info">Page 1 of 1</span>
+                <button class="page-btn" id="page-next" onclick="goPage(1)">Next →</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="loadUserIncidents()" title="Refresh Incidents">
+        ⟳
+    </button>
+
+    <!-- Incident Detail Modal -->
+    <div id="detail-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="border-top: 4px solid var(--accent);">
+            <div class="modal-header modal-header-enhanced">
+                <div>
+                    <span id="modal-id" class="incident-id"></span>
+                    <span id="modal-tier" class="tier-badge" style="margin-left: 10px;"></span>
+                    <button id="modal-reclassify-btn" onclick="toggleReclassify()"
+                        style="margin-left:8px; font-size:12px; padding:4px 10px; border-radius:6px;
+                        border:1px solid var(--border); background:transparent; color:var(--text-secondary);
+                        cursor:pointer; transition: all 0.2s;"
+                        title="Manually override the AI-assigned tier">✏️ Reclassify</button>
+                    <select id="modal-reclassify-select" onchange="doReclassify(this.value)"
+                        style="display:none; margin-left:8px; font-size:12px; padding:4px 8px; border-radius:6px;
+                        border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary);
+                        cursor:pointer;">
+                        <option value="">Change tier to…</option>
+                        <option value="1">🔴 Critical</option>
+                        <option value="2">🟡 Medium</option>
+                        <option value="3">🟢 Low</option>
+                    </select>
+                </div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <h2 id="modal-title" class="modal-title"></h2>
+            <p id="modal-desc" class="modal-desc"></p>
+
+            <!-- AI Classification Reason -->
+            <div id="modal-reason-box" class="ai-reason-box" style="display:none;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                    <span style="font-size:16px;">🤖</span>
+                    <span style="font-weight:700; font-size:13px; color:var(--accent);">AI Classification Reason</span>
+                </div>
+                <p id="modal-reason" style="font-size:13px; color:var(--text-secondary); margin:0; line-height:1.5;"></p>
+            </div>
+
+            <!-- Full Email Content (Expandable) -->
+            <div id="modal-email-section" class="email-content-section" style="display:none;">
+                <button class="email-expand-btn" onclick="toggleEmailContent()">
+                    <span>📧 View Full Email Content</span>
+                    <span id="email-expand-icon">▼</span>
+                </button>
+                <div id="modal-full-body" class="email-body-content" style="display:none;"></div>
+            </div>
+
+            <div class="modal-details">
+                <div class="detail-row">
+                    <span class="detail-label">📎 Source</span>
+                    <span id="modal-source"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🤖 AI Confidence</span>
+                    <span id="modal-confidence" style="font-weight:700;"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📊 Status</span>
+                    <span id="modal-status"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🕐 Received</span>
+                    <span id="modal-time"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⏱️ SLA Remaining</span>
+                    <span id="modal-sla" class="countdown"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">✅ Acknowledged</span>
+                    <span id="modal-acked"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📡 Notification Route</span>
+                    <span id="modal-channel"></span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="ack-btn" id="modal-ack-btn"
+                    style="padding: 10px 22px; font-size: 13px; font-weight:600;">Acknowledge</button>
+                <button class="ack-btn" id="modal-finish-btn"
+                    style="padding: 10px 22px; font-size: 13px; font-weight:600; background: linear-gradient(135deg,#22c55e,#16a34a); color:#0a0f1a; border:none;">
+                    ✅ Mark as Finished
+                </button>
+                <button class="ack-btn" style="padding: 10px 22px; font-size: 13px; background: var(--bg-secondary); color:var(--text-secondary); font-weight:600; border:1px solid var(--border);"
+                    onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Overview page uses 30 particles for denser background
+        createParticles(30);
+    </script>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script src="app.js"></script>
+    <script src="hero-factory.js"></script>
+    <script>
+        // Init sidebar after app.js defines currentUserEmail
+        document.addEventListener('DOMContentLoaded', () => {
+            initNav('overview');
+        });
+    </script>
+</body>
+
+</html>

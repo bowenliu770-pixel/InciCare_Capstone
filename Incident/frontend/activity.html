@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Activity Logs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        .activity-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 28px 32px 80px;
+        }
+        .activity-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .activity-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .activity-filter-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .activity-filter-btn {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .activity-filter-btn.active,
+        .activity-filter-btn:hover {
+            background: rgba(52,211,153,0.12);
+            border-color: rgba(52,211,153,0.4);
+            color: #34d399;
+        }
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #34d399, rgba(52,211,153,0.1));
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            animation: fadeSlideIn 0.3s ease both;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -24px;
+            top: 12px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-primary);
+            flex-shrink: 0;
+        }
+        .timeline-dot.t1 { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+        .timeline-dot.t2 { background: #eab308; box-shadow: 0 0 8px rgba(234,179,8,0.6); }
+        .timeline-dot.t3 { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+        .timeline-dot.sys { background: #818cf8; box-shadow: 0 0 8px rgba(129,140,248,0.6); }
+
+        .timeline-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .timeline-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(52,211,153,0.25);
+        }
+        .timeline-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .log-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .log-badge.t1  { background: rgba(239,68,68,0.15); color: #f87171; }
+        .log-badge.t2  { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+        .log-badge.t3  { background: rgba(34,197,94,0.15);  color: #4ade80; }
+        .log-badge.ack { background: rgba(129,140,248,0.15); color: #818cf8; }
+        .log-badge.sys { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+        .log-inc-id {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .log-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+        .log-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+        .log-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .log-meta {
+            margin-top: 8px;
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        /* Loading state */
+        .activity-loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .activity-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .activity-empty .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .activity-empty h3 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+    </style>
+</head>
+
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Activity Logs</h1>
+                <span class="subtitle">Chronological incident &amp; system event timeline</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" onclick="loadActivity()">⟳ Refresh</button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge">📋 Activity Log</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <span id="live-time" class="live-time-text">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="activity-container">
+        <div class="activity-header-row">
+            <div class="activity-title">Event Timeline</div>
+            <div style="font-size:12px; color:var(--text-muted);">
+                Showing all incident events for your account
+            </div>
+        </div>
+
+        <div class="activity-filter-row">
+            <button class="activity-filter-btn active" data-filter="all" onclick="setActivityFilter('all', this)">All Events</button>
+            <button class="activity-filter-btn" data-filter="1" onclick="setActivityFilter('1', this)">🔴 Critical</button>
+            <button class="activity-filter-btn" data-filter="2" onclick="setActivityFilter('2', this)">🟡 Medium</button>
+            <button class="activity-filter-btn" data-filter="3" onclick="setActivityFilter('3', this)">🟢 Low</button>
+            <button class="activity-filter-btn" data-filter="ack" onclick="setActivityFilter('ack', this)">✅ Acknowledged</button>
+        </div>
+
+        <div class="timeline" id="activity-timeline">
+            <div class="activity-loading" id="activity-loading">
+                <div style="font-size:32px; margin-bottom:12px;">⏳</div>
+                <div>Loading activity log…</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        let clockInterval = startClock('live-time');
+
+        let allIncidents = [];
+        let activityFilter = 'all';
+
+        function setActivityFilter(filter, btn) {
+            activityFilter = filter;
+            document.querySelectorAll('.activity-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderTimeline();
+        }
+
+        function renderTimeline() {
+            const timeline = document.getElementById('activity-timeline');
+            let items = [...allIncidents];
+
+            if (activityFilter === 'ack') {
+                items = items.filter(i => i.acknowledged);
+            } else if (activityFilter !== 'all') {
+                items = items.filter(i => i.tier == activityFilter);
+            }
+
+            if (items.length === 0) {
+                timeline.innerHTML = `<div class="activity-empty">
+                    <div class="empty-icon">📋</div>
+                    <h3>No Events Found</h3>
+                    <p>No log entries match the current filter. Incidents will appear here as emails arrive.</p>
+                </div>`;
+                return;
+            }
+
+            const tierDotClass = { 1: 't1', 2: 't2', 3: 't3' };
+            const tierBadgeClass = { 1: 't1', 2: 't2', 3: 't3' };
+
+            timeline.innerHTML = items.map((inc, idx) => {
+                const dotClass = tierDotClass[inc.tier] || 'sys';
+                const badgeClass = tierBadgeClass[inc.tier] || 'sys';
+                const ackHtml = inc.acknowledged
+                    ? `<span class="log-badge ack">✅ Acknowledged${inc.acknowledged_by ? ' by ' + inc.acknowledged_by : ''}</span>`
+                    : '';
+                const locHtml = inc.location_names && inc.location_names.length
+                    ? `<span>📍 ${inc.location_names.join(', ')}</span>` : '';
+
+                return `
+                <div class="timeline-item" style="animation-delay:${idx * 0.04}s">
+                    <div class="timeline-dot ${dotClass}"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-card-header">
+                            <span class="log-inc-id">${inc.id}</span>
+                            <span class="log-badge ${badgeClass}">${inc.tier_label}</span>
+                            ${ackHtml}
+                            <span class="log-time">🕐 ${inc.created_at}</span>
+                        </div>
+                        <div class="log-title">${inc.title}</div>
+                        <div class="log-desc">${inc.description}</div>
+                        <div class="log-meta">
+                            <span>📎 ${inc.source}</span>
+                            <span>📊 ${inc.status}</span>
+                            ${inc.classification_reason ? `<span style="font-style:italic;">"${inc.classification_reason}"</span>` : ''}
+                            ${locHtml}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadActivity() {
+            const userId = localStorage.getItem('comhub_user_id');
+            const timeline = document.getElementById('activity-timeline');
+
+            if (!userId) {
+                timeline.innerHTML = `<div class="activity-empty">
+                    <div class="empty-icon">🔐</div>
+                    <h3>Not Signed In</h3>
+                    <p>Please <a href="/" style="color:#34d399;">sign in from the Overview</a> to view your activity log.</p>
+                </div>`;
+                return;
+            }
+
+            timeline.innerHTML = `<div class="activity-loading" id="activity-loading"><div style="font-size:32px;margin-bottom:12px;">⏳</div><div>Loading…</div></div>`;
+
+            try {
+                const res = await fetch(`/api/incidents?user_id=${userId}`);
+                const data = await res.json();
+                allIncidents = (data.incidents || []).slice(); // already sorted newest-first
+                renderTimeline();
+            } catch (e) {
+                timeline.innerHTML = `<div class="activity-empty">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Could Not Load Logs</h3>
+                    <p>Make sure the backend (app.py) is running.</p>
+                </div>`;
+            }
+        }
+    </script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initNav('activity');
+            loadActivity();
+        });
+    </script>
+</body>
+
+</html>

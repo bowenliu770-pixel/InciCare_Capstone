@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Staff Dispatch</title>
+    <meta name="description" content="InciCare staff dispatch — assign available personnel to active incidents.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        .dispatch-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 32px 80px;
+        }
+        .dispatch-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 860px) {
+            .dispatch-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ===== PANEL ===== */
+        .dispatch-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .dispatch-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .dispatch-panel-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dispatch-panel-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* ===== STAFF CARD ===== */
+        .staff-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            transition: border-color 0.15s, transform 0.15s;
+            animation: fadeIn 0.25s ease both;
+        }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+        .staff-card:hover { border-color: rgba(52,211,153,0.3); transform: translateY(-1px); }
+        .staff-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800;
+            color: #0a0f1a;
+            flex-shrink: 0;
+        }
+        .staff-info { flex: 1; min-width: 0; }
+        .staff-name {
+            font-size: 14px; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .staff-role {
+            font-size: 11px; color: var(--text-muted); margin-top: 2px;
+        }
+        .staff-phone {
+            font-size: 11px; color: var(--text-secondary); margin-top: 3px;
+        }
+        .staff-assigned {
+            font-size: 11px; color: #818cf8; margin-top: 4px; font-weight: 600;
+        }
+        .staff-status {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; font-weight: 600;
+            padding: 3px 9px; border-radius: 12px; margin-top: 6px;
+        }
+        .staff-status.available { background: rgba(34,197,94,0.12); color: #22c55e; }
+        .staff-status.busy      { background: rgba(239,68,68,0.12);  color: #f87171; }
+        .staff-status.break     { background: rgba(234,179,8,0.12);  color: #fbbf24; }
+        .staff-status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+        .staff-actions {
+            display: flex; flex-direction: column; gap: 5px; flex-shrink: 0;
+        }
+        .staff-action-btn {
+            padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-secondary);
+            font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .staff-action-btn:hover {
+            background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4); color: #34d399;
+        }
+        .staff-action-btn.release {
+            color: #f87171; border-color: rgba(239,68,68,0.3);
+        }
+        .staff-action-btn.release:hover {
+            background: rgba(239,68,68,0.1); border-color: #f87171;
+        }
+
+        /* ===== ADD STAFF BTN ===== */
+        .add-staff-btn {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: 1px dashed rgba(52,211,153,0.35);
+            background: rgba(52,211,153,0.04);
+            color: #34d399; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .add-staff-btn:hover { background: rgba(52,211,153,0.1); border-color: #34d399; }
+
+        /* ===== INCIDENT ASSIGNMENT CARD ===== */
+        .inc-assign-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            transition: border-color 0.15s;
+            animation: fadeIn 0.25s ease both;
+        }
+        .inc-assign-card.tier-1 { border-left: 3px solid #ef4444; }
+        .inc-assign-card.tier-2 { border-left: 3px solid #eab308; }
+        .inc-assign-card.tier-3 { border-left: 3px solid #22c55e; }
+        .inc-assign-card:hover  { border-color: rgba(52,211,153,0.3); }
+
+        .inc-assign-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .inc-assign-id {
+            font-size: 11px; font-weight: 700; color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+        .inc-assign-badge {
+            font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px;
+        }
+        .inc-assign-badge.t1 { background: rgba(239,68,68,0.15); color: #f87171; }
+        .inc-assign-badge.t2 { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+        .inc-assign-badge.t3 { background: rgba(34,197,94,0.15);  color: #4ade80; }
+
+        .inc-assign-title {
+            font-size: 13px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 4px; line-height: 1.4;
+        }
+        .inc-assign-meta {
+            font-size: 11px; color: var(--text-muted); margin-bottom: 10px;
+            display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .inc-assign-footer {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        }
+        .inc-assign-assignee {
+            font-size: 12px; font-weight: 600;
+            color: #818cf8; display: flex; align-items: center; gap: 5px;
+        }
+        .inc-assign-assignee.none { color: var(--text-muted); font-weight: 400; font-style: italic; }
+        .assign-btn {
+            padding: 6px 14px; border-radius: 6px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none; color: white; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .assign-btn:hover { background: linear-gradient(135deg, #4f46e5, #3730a3); transform: scale(1.03); }
+        .unassign-btn {
+            padding: 6px 12px; border-radius: 6px;
+            border: 1px solid rgba(239,68,68,0.3); background: transparent;
+            color: #f87171; font-size: 11px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .unassign-btn:hover { background: rgba(239,68,68,0.1); }
+
+        /* ===== MODAL ===== */
+        .dispatch-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .dispatch-modal-overlay.active { display: flex; }
+        .dispatch-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            width: 440px; max-width: 95vw;
+            max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn { from { opacity:0; transform: scale(0.95) translateY(12px); } to { opacity:1; transform:none; } }
+        .dispatch-modal h3 { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+        .dispatch-modal p  { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+
+        .staff-pick-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+        .staff-pick-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-secondary);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .staff-pick-item:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+        .staff-pick-item.disabled { opacity: 0.4; pointer-events: none; }
+        .staff-pick-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 800; color: #0a0f1a; flex-shrink: 0;
+        }
+        .staff-pick-info { flex: 1; }
+        .staff-pick-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .staff-pick-role { font-size: 11px; color: var(--text-muted); }
+        .staff-pick-status { font-size: 11px; font-weight: 600; }
+        .staff-pick-status.available { color: #22c55e; }
+        .staff-pick-status.busy      { color: #f87171; }
+
+        .modal-cancel-btn {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-secondary); font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .modal-cancel-btn:hover { background: var(--bg-secondary); }
+
+        /* Add/Edit Staff Modal */
+        .staff-form-group { margin-bottom: 14px; }
+        .staff-form-label { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px; display: block; }
+        .staff-form-input {
+            width: 100%; padding: 10px 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            color: var(--text-primary); border-radius: 8px; font-size: 13px;
+            box-sizing: border-box; transition: border-color 0.15s;
+        }
+        .staff-form-input:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+        .staff-form-select {
+            width: 100%; padding: 10px 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            color: var(--text-primary); border-radius: 8px; font-size: 13px;
+            box-sizing: border-box; cursor: pointer;
+        }
+        .staff-form-save-btn {
+            width: 100%; padding: 11px; border-radius: 8px; border: none;
+            background: linear-gradient(135deg, #34d399, #10b981);
+            color: #0a0f1a; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: all 0.15s; margin-top: 4px;
+        }
+        .staff-form-save-btn:hover { filter: brightness(1.1); }
+
+        /* ===== NOTIFICATION BUTTON (header) ===== */
+        .notify-config-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 8px;
+            border: 1px solid rgba(129,140,248,0.35);
+            background: rgba(99,102,241,0.08);
+            color: #a5b4fc; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.18s;
+        }
+        .notify-config-btn:hover {
+            background: rgba(99,102,241,0.18); border-color: #818cf8; color: #c7d2fe;
+        }
+        .notify-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #34d399; flex-shrink: 0;
+            box-shadow: 0 0 6px #34d399;
+            animation: pulse-dot 2s infinite;
+        }
+        .notify-dot.warn { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+        .notify-dot.off  { background: #6b7280; box-shadow: none; animation: none; }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.6;transform:scale(1.3);} }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        #toast-container {
+            position: fixed; bottom: 28px; right: 28px;
+            display: flex; flex-direction: column-reverse; gap: 10px;
+            z-index: 99999; pointer-events: none;
+        }
+        .toast {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 18px;
+            background: rgba(15,20,40,0.97);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            min-width: 280px; max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: all;
+            animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .toast.removing { animation: toastOut 0.25s ease forwards; }
+        @keyframes toastIn  { from{opacity:0;transform:translateX(60px) scale(0.92);} to{opacity:1;transform:none;} }
+        @keyframes toastOut { from{opacity:1;transform:none;} to{opacity:0;transform:translateX(40px);} }
+        .toast-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+        .toast-body { flex: 1; }
+        .toast-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+        .toast-msg   { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+        .toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0; flex-shrink:0; }
+        .toast-close:hover { color: var(--text-primary); }
+        .toast.ok     { border-left: 3px solid #34d399; }
+        .toast.err    { border-left: 3px solid #f87171; }
+        .toast.warn   { border-left: 3px solid #fbbf24; }
+        .toast.info   { border-left: 3px solid #818cf8; }
+
+        /* ===== NOTIFY PROVIDER CONFIG MODAL ===== */
+        .notify-modal { width: 480px; }
+        .provider-tabs {
+            display: flex; gap: 6px; margin-bottom: 20px;
+        }
+        .provider-tab {
+            flex: 1; padding: 9px 6px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-secondary);
+            color: var(--text-secondary); font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .provider-tab:hover { border-color: rgba(99,102,241,0.4); color: var(--text-primary); }
+        .provider-tab.active {
+            background: rgba(99,102,241,0.15); border-color: #6366f1;
+            color: #c7d2fe;
+        }
+        .provider-section { display: none; }
+        .provider-section.active { display: block; }
+        .notify-save-btn {
+            width: 100%; padding: 11px; border-radius: 8px; border: none;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: all 0.15s; margin-top: 4px;
+        }
+        .notify-save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .notify-tier-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;
+        }
+        .tier-radio-btn {
+            flex: 1; min-width: 80px; padding: 8px 6px;
+            border-radius: 8px; border: 1px solid var(--border);
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-size: 11px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; text-align: center;
+        }
+        .tier-radio-btn:hover { border-color: rgba(99,102,241,0.4); }
+        .tier-radio-btn.selected { background: rgba(99,102,241,0.15); border-color: #6366f1; color: #c7d2fe; }
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+        }
+        .toggle-label { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+        .toggle-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .toggle-switch {
+            position: relative; width: 38px; height: 20px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0.1); border-radius: 20px;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .toggle-slider::before {
+            content: ''; position: absolute;
+            width: 14px; height: 14px; left: 3px; bottom: 3px;
+            background: white; border-radius: 50%; transition: transform 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #6366f1; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+        /* ===== NOTIFY SEND BUTTON (incident card) ===== */
+        .notify-send-btn {
+            padding: 5px 11px; border-radius: 6px;
+            border: 1px solid rgba(129,140,248,0.35);
+            background: rgba(99,102,241,0.08);
+            color: #a5b4fc; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .notify-send-btn:hover {
+            background: rgba(99,102,241,0.2); border-color: #818cf8;
+            transform: scale(1.04);
+        }
+        .notify-send-btn.loading { opacity: 0.6; pointer-events: none; }
+        .notify-send-btn.sent {
+            background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.4);
+            color: #34d399;
+        }
+        /* ===== CONFIRM MODAL ===== */
+        .confirm-modal { width: 380px; text-align: center; }
+        .confirm-modal .confirm-icon { font-size: 40px; margin-bottom: 10px; }
+        .confirm-modal .confirm-msg { font-size: 14px; color: var(--text-primary); margin-bottom: 6px; font-weight: 600; }
+        .confirm-modal .confirm-sub  { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+        .confirm-modal .confirm-actions { display: flex; gap: 10px; }
+        .confirm-btn {
+            flex: 1; padding: 10px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+            border: none;
+        }
+        .confirm-btn.cancel {
+            background: transparent; border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .confirm-btn.cancel:hover { background: var(--bg-secondary); }
+        .confirm-btn.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .confirm-btn.danger:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+        /* staff notify badge */
+        .staff-notify-badge {
+            font-size: 10px; font-weight: 600; padding: 2px 7px;
+            border-radius: 10px; background: rgba(99,102,241,0.12);
+            color: #818cf8; border: 1px solid rgba(99,102,241,0.25);
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .staff-notify-badge:hover { background: rgba(99,102,241,0.2); border-color: #818cf8; }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Staff Dispatch</h1>
+                <span class="subtitle">Assign available personnel to active incidents</span>
+            </div>
+        </div>
+        <div class="header-right" style="display:flex;gap:10px;align-items:center;">
+            <button class="notify-config-btn" id="notify-config-btn" onclick="openNotifyConfigModal()" title="Notification Gateway Settings">
+                <span class="notify-dot" id="notify-status-dot"></span>
+                <span id="notify-provider-label">Notifications</span>
+            </button>
+            <button class="refresh-btn" onclick="loadDispatch()">⟳ Refresh</button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge">👥 Dispatch Center</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <span id="live-time" class="live-time-text">--:--:--</span>
+                <span class="metric-divider">|</span>
+                <span id="avail-count" class="live-time-text">0</span>
+                <span class="metric-label">available</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dispatch-container">
+        <div class="dispatch-grid">
+
+            <!-- LEFT: Staff Roster -->
+            <div>
+                <div class="dispatch-panel">
+                    <div class="dispatch-panel-header">
+                        <div class="dispatch-panel-title">👥 Staff Roster</div>
+                        <button class="staff-action-btn" onclick="openAddStaffModal()" style="font-size:12px;">
+                            ➕ Add Staff
+                        </button>
+                    </div>
+                    <div class="dispatch-panel-body" id="staff-list">
+                        <div style="text-align:center;padding:40px;color:var(--text-muted);">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Active Incidents -->
+            <div>
+                <div class="dispatch-panel">
+                    <div class="dispatch-panel-header">
+                        <div class="dispatch-panel-title">🚨 Active Incidents</div>
+                        <span id="incident-assign-count" style="font-size:12px;color:var(--text-muted);">0 unassigned</span>
+                    </div>
+                    <div class="dispatch-panel-body" id="incident-assign-list">
+                        <div style="text-align:center;padding:40px;color:var(--text-muted);">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Notification Provider Config Modal -->
+    <div class="dispatch-modal-overlay" id="notify-config-modal">
+        <div class="dispatch-modal notify-modal">
+            <h3>🔔 Notification Gateway</h3>
+            <p>Choose a provider to alert staff when incidents are assigned.</p>
+
+            <!-- Provider Tabs -->
+            <div class="provider-tabs">
+                <button class="provider-tab" id="tab-simulate" onclick="selectProvider('simulate')">🎭 Simulate</button>
+                <button class="provider-tab" id="tab-twilio"   onclick="selectProvider('twilio')">📱 Twilio</button>
+                <button class="provider-tab" id="tab-pagerduty" onclick="selectProvider('pagerduty')">🔔 PagerDuty</button>
+            </div>
+
+            <!-- Auto-notify Tier -->
+            <div class="staff-form-group">
+                <label class="staff-form-label">Auto-notify on assignment for:</label>
+                <div class="notify-tier-row">
+                    <button class="tier-radio-btn" id="tier-btn-0" onclick="selectAutoTier(0)">🚫 Manual Only</button>
+                    <button class="tier-radio-btn" id="tier-btn-1" onclick="selectAutoTier(1)">🔴 Tier 1 Only</button>
+                    <button class="tier-radio-btn" id="tier-btn-2" onclick="selectAutoTier(2)">Tier 1 & 2</button>
+                    <button class="tier-radio-btn" id="tier-btn-3" onclick="selectAutoTier(3)">All Tiers</button>
+                </div>
+            </div>
+
+            <!-- Simulate Section -->
+            <div class="provider-section" id="section-simulate">
+                <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:13px;font-weight:700;color:#34d399;margin-bottom:6px;">✅ No credentials required</div>
+                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                        In Simulate mode, all notifications are logged to the backend console.
+                        The UI shows toast confirmations as if the notification was sent.
+                        Perfect for demos and testing.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Twilio Section -->
+            <div class="provider-section" id="section-twilio">
+                <div class="staff-form-group">
+                    <label class="staff-form-label">Account SID</label>
+                    <input class="staff-form-input" id="n-twilio-sid" type="text" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="staff-form-group">
+                    <label class="staff-form-label">Auth Token</label>
+                    <input class="staff-form-input" id="n-twilio-token" type="password" placeholder="Your Auth Token">
+                </div>
+                <div class="staff-form-group">
+                    <label class="staff-form-label">From Number (E.164)</label>
+                    <input class="staff-form-input" id="n-twilio-from" type="text" placeholder="+14155552671">
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Voice call for Tier 1</div>
+                        <div class="toggle-sub">Place an automated phone call for Critical incidents</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="n-twilio-voice" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PagerDuty Section -->
+            <div class="provider-section" id="section-pagerduty">
+                <div class="staff-form-group">
+                    <label class="staff-form-label">Events API v2 Integration Key</label>
+                    <input class="staff-form-input" id="n-pd-key" type="password" placeholder="32-character routing key">
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:5px;">Found in PagerDuty → Services → Integrations → Events API v2</div>
+                </div>
+                <div style="background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:10px;padding:12px;">
+                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                        🔔 <strong style="color:#a5b4fc;">Tier 1</strong> → PagerDuty <em>high urgency</em> incident<br>
+                        🟡 <strong style="color:#a5b4fc;">Tier 2</strong> → PagerDuty <em>low urgency</em> incident<br>
+                        Add a <strong style="color:#a5b4fc;">PagerDuty Email</strong> to each staff member to route alerts correctly.
+                    </div>
+                </div>
+            </div>
+
+            <button class="notify-save-btn" onclick="saveNotifyConfig()">💾 Save Configuration</button>
+            <button class="modal-cancel-btn" onclick="closeNotifyConfigModal()" style="margin-top:8px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Assign Staff Modal -->
+    <div class="dispatch-modal-overlay" id="assign-modal">
+        <div class="dispatch-modal">
+            <h3>👤 Assign Staff</h3>
+            <p id="assign-modal-desc">Select an available staff member to handle this incident.</p>
+            <div class="staff-pick-list" id="staff-pick-list"></div>
+            <button class="modal-cancel-btn" onclick="closeAssignModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Add/Edit Staff Modal -->
+    <div class="dispatch-modal-overlay" id="staff-form-modal">
+        <div class="dispatch-modal">
+            <h3 id="staff-form-title">➕ Add Staff Member</h3>
+            <p>Fill in the details for this staff member.</p>
+            <div class="staff-form-group">
+                <label class="staff-form-label">Full Name *</label>
+                <input class="staff-form-input" id="sf-name" type="text" placeholder="e.g. Alice Tan">
+            </div>
+            <div class="staff-form-group">
+                <label class="staff-form-label">Role / Position *</label>
+                <input class="staff-form-input" id="sf-role" type="text" placeholder="e.g. Senior Engineer">
+            </div>
+            <div class="staff-form-group">
+                <label class="staff-form-label">Phone Number</label>
+                <input class="staff-form-input" id="sf-phone" type="text" placeholder="e.g. +65 9123 4567">
+            </div>
+            <div class="staff-form-group">
+                <label class="staff-form-label">PagerDuty Email <span style="font-weight:400;color:var(--text-muted);">(optional — for PD routing)</span></label>
+                <input class="staff-form-input" id="sf-pd-email" type="email" placeholder="e.g. alice.tan@company.com">
+            </div>
+            <div class="staff-form-group">
+                <label class="staff-form-label">Status</label>
+                <select class="staff-form-select" id="sf-status">
+                    <option value="available">🟢 Available</option>
+                    <option value="busy">🔴 Busy</option>
+                    <option value="break">🟡 On Break</option>
+                </select>
+            </div>
+            <input type="hidden" id="sf-edit-id">
+            <button class="staff-form-save-btn" onclick="saveStaff()">💾 Save</button>
+            <button class="modal-cancel-btn" onclick="closeStaffFormModal()" style="margin-top:8px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="dispatch-modal-overlay" id="confirm-modal">
+        <div class="dispatch-modal confirm-modal">
+            <div class="confirm-icon">⚠️</div>
+            <div class="confirm-msg" id="confirm-msg">Remove this staff member?</div>
+            <div class="confirm-sub" id="confirm-sub">This action cannot be undone.</div>
+            <div class="confirm-actions">
+                <button class="confirm-btn cancel" onclick="closeConfirmModal()">Cancel</button>
+                <button class="confirm-btn danger" id="confirm-ok-btn" onclick="execConfirmDelete()">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script>
+        startClock('live-time');
+
+        // ===== STAFF DATA (localStorage) =====
+        const STAFF_KEY = 'comhub_staff';
+        const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f97316','#0ea5e9','#14b8a6','#84cc16','#f59e0b'];
+
+        function loadStaff() {
+            try {
+                const raw = localStorage.getItem(STAFF_KEY);
+                return raw ? JSON.parse(raw) : getDefaultStaff();
+            } catch { return getDefaultStaff(); }
+        }
+
+        function saveStaffData(staff) {
+            localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+        }
+
+        function getDefaultStaff() {
+            const defaults = [
+                { id: 's1', name: 'Alice Tan',   role: 'Senior Engineer',  phone: '+65 9100 0001', status: 'available', assignedTo: null, color: AVATAR_COLORS[0] },
+                { id: 's2', name: 'Bob Lim',     role: 'Network Ops',      phone: '+65 9100 0002', status: 'available', assignedTo: null, color: AVATAR_COLORS[1] },
+                { id: 's3', name: 'Carol Wong',  role: 'Security Analyst', phone: '+65 9100 0003', status: 'available', assignedTo: null, color: AVATAR_COLORS[2] },
+                { id: 's4', name: 'David Chen',  role: 'Database Admin',   phone: '+65 9100 0004', status: 'available', assignedTo: null, color: AVATAR_COLORS[3] },
+            ];
+            saveStaffData(defaults);
+            return defaults;
+        }
+
+        // ===== STATE =====
+        let staffList = loadStaff();
+        let activeIncidents = [];
+        let pendingAssignIncId = null;
+
+        // ===== RENDER STAFF =====
+        function renderStaff() {
+            const container = document.getElementById('staff-list');
+            if (staffList.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">
+                    <div style="font-size:32px;margin-bottom:10px;">👤</div>
+                    <div>No staff added yet.</div>
+                </div>
+                <button class="add-staff-btn" onclick="openAddStaffModal()">➕ Add your first staff member</button>`;
+                return;
+            }
+            const availCount = staffList.filter(s => s.status === 'available').length;
+            document.getElementById('avail-count').textContent = availCount;
+
+            container.innerHTML = staffList.map((s, idx) => {
+                const initials = s.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                const color = s.color || AVATAR_COLORS[idx % AVATAR_COLORS.length];
+                const statusClass = s.status === 'available' ? 'available' : s.status === 'busy' ? 'busy' : 'break';
+                const statusLabel = s.status === 'available' ? '🟢 Available' : s.status === 'busy' ? '🔴 Busy' : '🟡 On Break';
+                // Show 🔔 Notify if the staff member is assigned to an incident
+                const notifyBadge = s.assignedTo
+                    ? `<button class="staff-notify-badge" onclick="notifyStaffForIncident('${s.id}','${s.assignedTo}')" title="Send notification to ${s.name}">🔔 Notify</button>`
+                    : '';
+                return `
+                <div class="staff-card" id="staff-card-${s.id}">
+                    <div class="staff-avatar" style="background:${color};">${initials}</div>
+                    <div class="staff-info">
+                        <div class="staff-name">${s.name}</div>
+                        <div class="staff-role">${s.role}</div>
+                        ${s.phone ? `<div class="staff-phone">📞 ${s.phone}</div>` : ''}
+                        ${s.assignedTo ? `<div class="staff-assigned">📌 On: ${s.assignedTo}</div>` : ''}
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+                            <span class="staff-status ${statusClass}">
+                                <span class="staff-status-dot"></span>${statusLabel}
+                            </span>
+                            ${notifyBadge}
+                        </div>
+                    </div>
+                    <div class="staff-actions">
+                        <button class="staff-action-btn" onclick="cycleStatus('${s.id}')" title="Change status">↻ Status</button>
+                        <button class="staff-action-btn" onclick="openEditStaffModal('${s.id}')">✏️ Edit</button>
+                        <button class="staff-action-btn release" onclick="deleteStaff('${s.id}')">🗑️</button>
+                    </div>
+                </div>`;
+            }).join('') + `<button class="add-staff-btn" onclick="openAddStaffModal()" style="margin-top:4px;">➕ Add Staff Member</button>`;
+        }
+
+        function cycleStatus(staffId) {
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) return;
+            const cycle = { available: 'break', break: 'busy', busy: 'available' };
+            s.status = cycle[s.status] || 'available';
+            if (s.status !== 'busy') s.assignedTo = null;
+            saveStaffData(staffList);
+            renderStaff();
+        }
+
+        let pendingDeleteStaffId = null;
+
+        function openConfirmModal(staffId, staffName) {
+            pendingDeleteStaffId = staffId;
+            document.getElementById('confirm-msg').textContent = `Remove ${staffName}?`;
+            document.getElementById('confirm-sub').textContent = 'This action cannot be undone.';
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('active');
+            pendingDeleteStaffId = null;
+        }
+
+        function execConfirmDelete() {
+            if (!pendingDeleteStaffId) return;
+            const id = pendingDeleteStaffId;
+            closeConfirmModal();
+            staffList = staffList.filter(s => s.id !== id);
+            saveStaffData(staffList);
+            renderStaff();
+            showToast('info', '🗑️ Removed', 'Staff member has been removed.');
+        }
+
+        function deleteStaff(staffId) {
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) return;
+            openConfirmModal(staffId, s.name);
+        }
+
+        // ===== RENDER INCIDENTS =====
+        function renderIncidentAssignList() {
+            const container = document.getElementById('incident-assign-list');
+            const userId = localStorage.getItem('comhub_user_id');
+            if (!userId) {
+                container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);">
+                    <div style="font-size:32px;margin-bottom:10px;">🔐</div>
+                    <div>Please <a href="/" style="color:#34d399;">sign in</a> to see active incidents.</div>
+                </div>`;
+                return;
+            }
+            // Only show active (not finished) incidents
+            const actives = activeIncidents.filter(i => !i.finished && i.status === 'active');
+            const unassigned = actives.filter(i => !i.assigned_to).length;
+            document.getElementById('incident-assign-count').textContent = `${unassigned} unassigned`;
+
+            if (actives.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--text-muted);">
+                    <div style="font-size:36px;margin-bottom:12px;">🛡️</div>
+                    <div style="font-weight:600;">No Active Incidents</div>
+                    <div style="font-size:12px;margin-top:6px;">All clear — no incidents need assignment right now.</div>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = actives.map((inc, idx) => {
+                const assignee = inc.assigned_to
+                    ? `<span class="inc-assign-assignee">👤 ${inc.assigned_to}</span>`
+                    : `<span class="inc-assign-assignee none">Unassigned</span>`;
+                const assignBtn = inc.assigned_to
+                    ? ''
+                    : `<button class="assign-btn" onclick="openAssignModal('${inc.id}')">Assign →</button>`;
+                const unassignBtn = inc.assigned_to
+                    ? `<button class="unassign-btn" onclick="unassignIncident('${inc.id}')">Release</button>`
+                    : '';
+                // 🔔 Send Alert button — visible when assigned
+                const notifyBtn = inc.assigned_to
+                    ? `<button class="notify-send-btn" id="notify-btn-${inc.id}" onclick="sendNotifyForIncident('${inc.id}')" title="Send notification to ${inc.assigned_to}">🔔 Alert</button>`
+                    : '';
+                return `
+                <div class="inc-assign-card tier-${inc.tier}" style="animation-delay:${idx*0.05}s;">
+                    <div class="inc-assign-header">
+                        <span class="inc-assign-id">${inc.id}</span>
+                        <span class="inc-assign-badge t${inc.tier}">${inc.tier_label}</span>
+                    </div>
+                    <div class="inc-assign-title">${inc.title}</div>
+                    <div class="inc-assign-meta">
+                        <span>📎 ${inc.source}</span>
+                        <span>🕐 ${inc.created_at}</span>
+                        ${inc.sla_countdown > 0 ? `<span>⏱ SLA: ${formatTime(inc.sla_countdown)}</span>` : '<span style="color:#f87171;">⚠ SLA Expired</span>'}
+                    </div>
+                    <div class="inc-assign-footer">
+                        ${assignee}
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                            ${notifyBtn}
+                            ${unassignBtn}
+                            ${assignBtn}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}m ${s}s`;
+        }
+
+        // ===== ASSIGN MODAL =====
+        function openAssignModal(incId) {
+            pendingAssignIncId = incId;
+            const inc = activeIncidents.find(i => i.id === incId);
+            document.getElementById('assign-modal-desc').textContent =
+                `Incident ${incId}: "${inc ? inc.title.slice(0,50) : ''}" — pick an available staff member.`;
+            const list = document.getElementById('staff-pick-list');
+            list.innerHTML = staffList.map(s => {
+                const initials = s.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                const color = s.color || AVATAR_COLORS[0];
+                const isBusy = s.status === 'busy';
+                return `
+                <div class="staff-pick-item ${isBusy ? 'disabled' : ''}" onclick="${isBusy ? '' : `confirmAssign('${s.id}')`}">
+                    <div class="staff-pick-avatar" style="background:${color};">${initials}</div>
+                    <div class="staff-pick-info">
+                        <div class="staff-pick-name">${s.name}</div>
+                        <div class="staff-pick-role">${s.role}${s.phone ? ' · ' + s.phone : ''}</div>
+                    </div>
+                    <span class="staff-pick-status ${s.status}">${s.status === 'available' ? '🟢 Available' : s.status === 'busy' ? '🔴 Busy' : '🟡 Break'}</span>
+                </div>`;
+            }).join('') || '<div style="color:var(--text-muted);text-align:center;padding:20px;">No staff added yet.</div>';
+            document.getElementById('assign-modal').classList.add('active');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assign-modal').classList.remove('active');
+            pendingAssignIncId = null;
+        }
+
+        async function confirmAssign(staffId) {
+            if (!pendingAssignIncId) return;
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) return;
+            const userId = localStorage.getItem('comhub_user_id');
+            const incId = pendingAssignIncId;
+            const inc = activeIncidents.find(i => i.id === incId);
+
+            // Determine auto-notify
+            const autoNotify = notifyConfig.auto_notify_tier >= (inc ? inc.tier : 99);
+            const staffInfo = { name: s.name, phone: s.phone || '', pagerduty_email: s.pagerduty_email || '' };
+
+            // Update backend (with optional auto-notify)
+            if (userId) {
+                try {
+                    const res = await fetch(`/api/incidents/${incId}/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            assigned_to: s.name,
+                            notify: autoNotify,
+                            staff_info: staffInfo
+                        })
+                    });
+                    const data = await res.json();
+                    if (autoNotify && data.notification) {
+                        showNotifyToast(data.notification, s.name, incId);
+                    }
+                } catch (e) { console.warn('Assign API failed:', e); }
+            }
+
+            // Update local incident state
+            if (inc) inc.assigned_to = s.name;
+
+            // Update staff state
+            s.status = 'busy';
+            s.assignedTo = incId;
+            saveStaffData(staffList);
+
+            closeAssignModal();
+            renderStaff();
+            renderIncidentAssignList();
+        }
+
+        // ===== MANUAL NOTIFY FROM INCIDENT CARD =====
+        async function sendNotifyForIncident(incId) {
+            const userId = localStorage.getItem('comhub_user_id');
+            if (!userId) { showToast('warn', '⚠️ Not logged in', 'Sign in to use notifications.'); return; }
+            const inc = activeIncidents.find(i => i.id === incId);
+            if (!inc || !inc.assigned_to) { showToast('warn', '⚠️ No assignee', 'Assign a staff member first.'); return; }
+
+            // Find the staff member
+            const s = staffList.find(x => x.name === inc.assigned_to);
+            const staffPayload = s
+                ? { name: s.name, phone: s.phone || '', pagerduty_email: s.pagerduty_email || '' }
+                : { name: inc.assigned_to, phone: '', pagerduty_email: '' };
+
+            // Update button state
+            const btn = document.getElementById(`notify-btn-${incId}`);
+            if (btn) { btn.classList.add('loading'); btn.textContent = '⏳ Sending…'; }
+
+            try {
+                const res = await fetch('/api/notify/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, incident_id: incId, staff: staffPayload })
+                });
+                const data = await res.json();
+                showNotifyToast(data, staffPayload.name, incId);
+                if (btn) { btn.classList.remove('loading'); btn.classList.add('sent'); btn.textContent = '✅ Sent'; }
+                setTimeout(() => { if (btn) { btn.classList.remove('sent'); btn.textContent = '🔔 Alert'; } }, 3500);
+            } catch (e) {
+                showToast('err', '❌ Network Error', 'Could not reach the notification gateway.');
+                if (btn) { btn.classList.remove('loading'); btn.textContent = '🔔 Alert'; }
+            }
+        }
+
+        // ===== MANUAL NOTIFY FROM STAFF CARD =====
+        async function notifyStaffForIncident(staffId, incId) {
+            const userId = localStorage.getItem('comhub_user_id');
+            if (!userId) { showToast('warn', '⚠️ Not logged in', 'Sign in to use notifications.'); return; }
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) return;
+            const staffPayload = { name: s.name, phone: s.phone || '', pagerduty_email: s.pagerduty_email || '' };
+
+            try {
+                const res = await fetch('/api/notify/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, incident_id: incId, staff: staffPayload })
+                });
+                const data = await res.json();
+                showNotifyToast(data, s.name, incId);
+            } catch (e) {
+                showToast('err', '❌ Network Error', 'Could not reach notification gateway.');
+            }
+        }
+
+        async function unassignIncident(incId) {
+            const userId = localStorage.getItem('comhub_user_id');
+            const inc = activeIncidents.find(i => i.id === incId);
+            if (!inc) return;
+            const staffName = inc.assigned_to;
+
+            // Update backend
+            if (userId) {
+                try {
+                    await fetch(`/api/incidents/${incId}/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, assigned_to: null })
+                    });
+                } catch (e) { console.warn('Unassign API failed:', e); }
+            }
+
+            inc.assigned_to = null;
+
+            // Release staff member
+            if (staffName) {
+                const s = staffList.find(x => x.name === staffName);
+                if (s) { s.status = 'available'; s.assignedTo = null; }
+                saveStaffData(staffList);
+            }
+
+            renderStaff();
+            renderIncidentAssignList();
+        }
+
+        // ===== ADD / EDIT STAFF MODAL =====
+        function openAddStaffModal() {
+            document.getElementById('staff-form-title').textContent = '➕ Add Staff Member';
+            document.getElementById('sf-name').value = '';
+            document.getElementById('sf-role').value = '';
+            document.getElementById('sf-phone').value = '';
+            document.getElementById('sf-pd-email').value = '';
+            document.getElementById('sf-status').value = 'available';
+            document.getElementById('sf-edit-id').value = '';
+            document.getElementById('staff-form-modal').classList.add('active');
+        }
+
+        function openEditStaffModal(staffId) {
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) {
+                showToast('err', '❌ Not Found', 'Staff member no longer exists. Refreshing list...');
+                loadDispatch();
+                return;
+            }
+            document.getElementById('staff-form-title').textContent = '✏️ Edit Staff Member';
+            document.getElementById('sf-name').value = s.name;
+            document.getElementById('sf-role').value = s.role;
+            document.getElementById('sf-phone').value = s.phone || '';
+            document.getElementById('sf-pd-email').value = s.pagerduty_email || '';
+            document.getElementById('sf-status').value = s.status;
+            document.getElementById('sf-edit-id').value = s.id;
+            document.getElementById('staff-form-modal').classList.add('active');
+        }
+
+        function closeStaffFormModal() {
+            document.getElementById('staff-form-modal').classList.remove('active');
+        }
+
+        function saveStaff() {
+            try {
+                const name     = document.getElementById('sf-name').value.trim();
+                const role     = document.getElementById('sf-role').value.trim();
+                const phone    = document.getElementById('sf-phone').value.trim();
+                const pdEmail  = document.getElementById('sf-pd-email').value.trim();
+                const status   = document.getElementById('sf-status').value;
+                const editId   = document.getElementById('sf-edit-id').value;
+
+                if (!name || !role) {
+                    showToast('warn', '⚠️ Required fields', 'Name and Role are required.');
+                    return;
+                }
+
+                if (editId) {
+                    // Edit existing
+                    const s = staffList.find(x => x.id === editId);
+                    if (!s) {
+                        showToast('err', '❌ Error', 'Staff member not found. The list may have changed.');
+                        closeStaffFormModal();
+                        renderStaff();
+                        return;
+                    }
+                    s.name = name;
+                    s.role = role;
+                    s.phone = phone;
+                    s.pagerduty_email = pdEmail;
+                    // Keep busy if currently assigned, otherwise respect form selection
+                    if (s.assignedTo) {
+                        s.status = 'busy';
+                    } else {
+                        s.status = status;
+                    }
+                    showToast('ok', '✅ Updated', `${name}'s info has been saved.`);
+                } else {
+                    // Add new
+                    const newId = 's' + Date.now();
+                    const color = AVATAR_COLORS[staffList.length % AVATAR_COLORS.length];
+                    staffList.push({ id: newId, name, role, phone, pagerduty_email: pdEmail, status, assignedTo: null, color });
+                    showToast('ok', '✅ Added', `${name} has been added to the roster.`);
+                }
+                saveStaffData(staffList);
+                closeStaffFormModal();
+                renderStaff();
+            } catch (e) {
+                console.error('saveStaff error:', e);
+                showToast('err', '❌ Save Failed', 'An unexpected error occurred. Please try again.');
+            }
+        }
+
+        // ===== TOAST SYSTEM =====
+        function showToast(type, title, msg, durationMs = 5000) {
+            const container = document.getElementById('toast-container');
+            const icons = { ok: '✅', err: '❌', warn: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || 'ℹ️'}</div>
+                <div class="toast-body">
+                    <div class="toast-title">${title}</div>
+                    ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+                </div>
+                <button class="toast-close" onclick="removeToast(this.closest('.toast'))">×</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => removeToast(toast), durationMs);
+        }
+        function removeToast(el) {
+            if (!el || el.classList.contains('removing')) return;
+            el.classList.add('removing');
+            setTimeout(() => el.remove(), 260);
+        }
+
+        function showNotifyToast(result, staffName, incId) {
+            const provider = (result.provider || 'simulate').toUpperCase();
+            if (result.ok) {
+                const actionStr = (result.actions || []).join(', ') || 'notification logged';
+                showToast('ok', `🔔 Alert sent via ${provider}`,
+                    `<strong>${staffName}</strong> notified for <strong>${incId}</strong><br>Actions: ${actionStr}`);
+            } else {
+                const errStr = (result.errors || [result.error || 'Unknown error']).join('; ');
+                showToast('err', `❌ Notification failed (${provider})`,
+                    `Could not reach <strong>${staffName}</strong><br>Error: ${errStr}`);
+            }
+        }
+
+        // ===== NOTIFY CONFIG MODAL =====
+        let notifyConfig = { provider: 'simulate', auto_notify_tier: 1 };
+        let selectedProvider = 'simulate';
+        let selectedAutoTier = 1;
+
+        async function loadNotifyConfig() {
+            try {
+                const res = await fetch('/api/notify/config');
+                const data = await res.json();
+                if (data.code === 200) {
+                    notifyConfig = data;
+                    updateNotifyStatusDot(data.provider);
+                }
+            } catch (e) { /* backend may not be available */ }
+        }
+
+        function updateNotifyStatusDot(provider) {
+            const dot = document.getElementById('notify-status-dot');
+            const label = document.getElementById('notify-provider-label');
+            if (!dot || !label) return;
+            dot.className = 'notify-dot';
+            if (provider === 'simulate') {
+                label.textContent = 'Notify: Simulate';
+            } else if (provider === 'twilio') {
+                dot.classList.add(notifyConfig.twilio_configured ? '' : 'warn');
+                label.textContent = notifyConfig.twilio_configured ? 'Notify: Twilio ✓' : 'Twilio (unconfigured)';
+            } else if (provider === 'pagerduty') {
+                dot.classList.add(notifyConfig.pagerduty_configured ? '' : 'warn');
+                label.textContent = notifyConfig.pagerduty_configured ? 'Notify: PagerDuty ✓' : 'PagerDuty (unconfigured)';
+            }
+        }
+
+        function openNotifyConfigModal() {
+            selectedProvider = notifyConfig.provider || 'simulate';
+            selectedAutoTier = notifyConfig.auto_notify_tier ?? 1;
+            // Fill fields
+            document.getElementById('n-twilio-sid').value   = notifyConfig.twilio_account_sid || '';
+            document.getElementById('n-twilio-token').value = '';
+            document.getElementById('n-twilio-from').value  = notifyConfig.twilio_from_number || '';
+            document.getElementById('n-twilio-voice').checked = notifyConfig.twilio_voice_enabled !== false;
+            document.getElementById('n-pd-key').value       = '';
+            selectProvider(selectedProvider, false);
+            selectAutoTier(selectedAutoTier, false);
+            document.getElementById('notify-config-modal').classList.add('active');
+        }
+
+        function closeNotifyConfigModal() {
+            document.getElementById('notify-config-modal').classList.remove('active');
+        }
+
+        function selectProvider(p, animate = true) {
+            selectedProvider = p;
+            ['simulate','twilio','pagerduty'].forEach(id => {
+                document.getElementById(`tab-${id}`).classList.toggle('active', id === p);
+                document.getElementById(`section-${id}`).classList.toggle('active', id === p);
+            });
+        }
+
+        function selectAutoTier(t, animate = true) {
+            selectedAutoTier = t;
+            [0,1,2,3].forEach(i => {
+                document.getElementById(`tier-btn-${i}`).classList.toggle('selected', i === t);
+            });
+        }
+
+        async function saveNotifyConfig() {
+            const payload = {
+                provider: selectedProvider,
+                auto_notify_tier: selectedAutoTier,
+                twilio_account_sid: document.getElementById('n-twilio-sid').value.trim(),
+                twilio_auth_token:  document.getElementById('n-twilio-token').value.trim(),
+                twilio_from_number: document.getElementById('n-twilio-from').value.trim(),
+                twilio_voice_enabled: document.getElementById('n-twilio-voice').checked,
+                pagerduty_routing_key: document.getElementById('n-pd-key').value.trim(),
+            };
+            try {
+                const res = await fetch('/api/notify/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    notifyConfig = { ...notifyConfig, ...payload, provider: selectedProvider, auto_notify_tier: selectedAutoTier };
+                    updateNotifyStatusDot(selectedProvider);
+                    closeNotifyConfigModal();
+                    showToast('ok', '✅ Config Saved', `Provider: <strong>${selectedProvider}</strong> | Auto-notify: Tier ≤ ${selectedAutoTier || 'manual only'}`);
+                } else {
+                    showToast('err', '❌ Save Failed', data.msg || 'Unknown error');
+                }
+            } catch (e) {
+                showToast('err', '❌ Network Error', 'Could not reach backend. Is the server running?');
+            }
+        }
+
+        // ===== LOAD DATA =====
+        async function loadDispatch() {
+            staffList = loadStaff();
+            renderStaff();
+
+            const userId = localStorage.getItem('comhub_user_id');
+            if (!userId) {
+                renderIncidentAssignList();
+                return;
+            }
+            try {
+                const res = await fetch(`/api/incidents?user_id=${userId}`);
+                const data = await res.json();
+                activeIncidents = (data.incidents || []).filter(i => !i.finished);
+
+                // Sync staff assignments with incident data
+                staffList.forEach(s => {
+                    if (s.assignedTo) {
+                        const inc = activeIncidents.find(i => i.id === s.assignedTo);
+                        if (!inc || inc.finished) {
+                            s.status = 'available';
+                            s.assignedTo = null;
+                        }
+                    }
+                });
+                saveStaffData(staffList);
+                renderStaff();
+                renderIncidentAssignList();
+            } catch (e) {
+                console.error('Failed to load incidents:', e);
+                renderIncidentAssignList();
+            }
+        }
+
+        // SLA countdown
+        setInterval(() => {
+            activeIncidents.forEach(inc => {
+                if (inc.status === 'active' && inc.sla_countdown > 0) inc.sla_countdown--;
+            });
+            // Re-render incident list every 10s to update SLA display
+        }, 1000);
+
+        // WebSocket for real-time updates
+        try {
+            const socket = io();
+            socket.on('connect', () => {
+                const userId = localStorage.getItem('comhub_user_id');
+                if (userId) socket.emit('bind_user', userId);
+            });
+            socket.on('new_incident', (payload) => {
+                const inc = payload.incident || payload;
+                if (!activeIncidents.find(i => i.id === inc.id)) {
+                    activeIncidents.unshift(inc);
+                    renderIncidentAssignList();
+                }
+            });
+            socket.on('incident_updated', (payload) => {
+                const inc = payload.incident || payload;
+                const idx = activeIncidents.findIndex(i => i.id === inc.id);
+                if (idx >= 0) activeIncidents[idx] = inc;
+                else activeIncidents.unshift(inc);
+                renderIncidentAssignList();
+            });
+        } catch (e) { console.log('Socket.IO not available'); }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initNav('dispatch');
+            loadDispatch();
+            loadNotifyConfig();
+        });
+    </script>
+</body>
+</html>

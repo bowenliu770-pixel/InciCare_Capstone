@@ -1,0 +1,476 @@
+/* ===================================================
+   InciCare — Left Navigation Sidebar (ChatGPT-style)
+   =================================================== */
+
+:root {
+    --nav-width: 240px;
+    --nav-bg: #0d1117;
+    --nav-border: #21262d;
+    --nav-item-hover: rgba(255,255,255,0.06);
+    --nav-item-active: rgba(52,211,153,0.12);
+    --nav-item-active-border: #34d399;
+}
+
+/* ===== BODY OFFSET — push all content right =====
+   Applied globally so header, status-bar, everything shifts */
+body {
+    padding-left: var(--nav-width);
+}
+
+/* ===== LEFT SIDEBAR ===== */
+.left-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--nav-width);
+    height: 100vh;
+    background: var(--nav-bg);
+    border-right: 1px solid var(--nav-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 500;
+    overflow: hidden;
+    transition: width 0.2s ease;
+}
+
+/* ===== BRAND / LOGO ===== */
+.nav-brand {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--nav-border);
+    flex-shrink: 0;
+}
+
+.nav-brand-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-brand-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.nav-brand-text h2 {
+    font-size: 15px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #34d399 0%, #6ee7b7 50%, #34d399 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+.nav-brand-text span {
+    font-size: 10px;
+    color: var(--text-muted, #5a6778);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    display: block;
+    margin-top: 2px;
+}
+
+/* ===== NAV SECTION LABEL ===== */
+.nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted, #5a6778);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 12px 16px 6px;
+}
+
+/* ===== NAV ITEMS ===== */
+.nav-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 8px 0;
+}
+
+.nav-items::-webkit-scrollbar { width: 3px; }
+.nav-items::-webkit-scrollbar-track { background: transparent; }
+.nav-items::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-left 0.1s, color 0.15s;
+    text-decoration: none;
+    color: var(--text-secondary, #8b98a9);
+    font-size: 13.5px;
+    font-weight: 500;
+    border-left: 2px solid transparent;
+    margin-bottom: 2px;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-item:hover {
+    background: var(--nav-item-hover);
+    color: var(--text-primary, #e6edf3);
+}
+
+.nav-item.active {
+    background: var(--nav-item-active);
+    border-left-color: var(--nav-item-active-border);
+    color: #34d399;
+    font-weight: 600;
+}
+
+.nav-item-icon {
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+
+.nav-item-label {
+    flex: 1;
+}
+
+/* Badge on nav item (e.g. count of critical alerts) */
+.nav-item-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(248,113,113,0.2);
+    color: #f87171;
+    flex-shrink: 0;
+    min-width: 18px;
+    text-align: center;
+}
+
+.nav-item-badge.medium {
+    background: rgba(251,191,36,0.2);
+    color: #fbbf24;
+}
+.nav-item-badge.low {
+    background: rgba(52,211,153,0.2);
+    color: #34d399;
+}
+
+/* Divider between nav groups */
+.nav-divider {
+    height: 1px;
+    background: var(--nav-border);
+    margin: 8px 8px;
+}
+
+/* ===== STATUS CHIP inside sidebar ===== */
+.nav-status-chip {
+    margin: 0 8px 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #34d399;
+    font-weight: 600;
+}
+
+.nav-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #34d399;
+    animation: pulseGreen 2s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes pulseGreen {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ===== USER PROFILE — bottom of sidebar ===== */
+.nav-user {
+    flex-shrink: 0;
+    border-top: 1px solid var(--nav-border);
+    padding: 12px 8px;
+}
+
+.nav-user-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-align: left;
+}
+
+.nav-user-btn:hover {
+    background: var(--nav-item-hover);
+}
+
+.nav-user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0a0f1a;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.nav-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nav-user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-user-email {
+    font-size: 10px;
+    color: var(--text-muted, #5a6778);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+/* User dropdown */
+.nav-user-dropdown {
+    position: absolute;
+    bottom: 70px;
+    left: 8px;
+    right: 8px;
+    background: #1a2332;
+    border: 1px solid var(--nav-border);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: none;
+    z-index: 600;
+}
+
+.nav-user-dropdown.open {
+    display: block;
+    animation: dropUp 0.15s ease;
+}
+
+@keyframes dropUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    color: var(--text-secondary, #8b98a9);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+
+.nav-dropdown-item:hover {
+    background: var(--nav-item-hover);
+    color: var(--text-primary, #e6edf3);
+}
+
+.nav-dropdown-item.danger {
+    color: #f87171;
+}
+.nav-dropdown-item.danger:hover {
+    background: rgba(248,113,113,0.12);
+    color: #f87171;
+}
+
+.nav-dropdown-divider {
+    height: 1px;
+    background: var(--nav-border);
+    margin: 4px 0;
+}
+
+/* ===== NOT LOGGED IN STATE ===== */
+.nav-user-login-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.25);
+    color: #34d399;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.15s;
+    text-align: left;
+}
+.nav-user-login-btn:hover {
+    background: rgba(52,211,153,0.18);
+}
+
+/* ===== HEADER — no more burger, just right-side info ===== */
+/* Remove the old header-right burger/profile controls styling if needed */
+.header {
+    /* Removed sticky: the sidebar handles nav */
+    position: relative !important;
+    top: auto !important;
+}
+
+/* Hide old burger elements (cleanup) */
+.burger-btn,
+.burger-sidebar,
+.burger-overlay,
+.back-dashboard-btn.old {
+    display: none !important;
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+[data-theme="light"] {
+    --nav-bg: #ffffff;
+    --nav-border: #e2e8f0;
+    --nav-item-hover: rgba(0,0,0,0.05);
+    --nav-item-active: rgba(16,185,129,0.1);
+    --nav-item-active-border: #10b981;
+}
+
+[data-theme="light"] .left-nav {
+    background: #ffffff;
+    border-right-color: #e2e8f0;
+}
+
+[data-theme="light"] .nav-brand-text h2 {
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #059669 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="light"] .nav-item {
+    color: #475569;
+}
+[data-theme="light"] .nav-item:hover {
+    color: #0f172a;
+}
+[data-theme="light"] .nav-item.active {
+    color: #059669;
+}
+
+[data-theme="light"] .nav-items::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+[data-theme="light"] .nav-user-dropdown {
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .nav-user-login-btn {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.2);
+    color: #059669;
+}
+[data-theme="light"] .nav-user-login-btn:hover {
+    background: rgba(16,185,129,0.14);
+}
+
+[data-theme="light"] .nav-status-chip {
+    background: rgba(16,185,129,0.06);
+    border-color: rgba(16,185,129,0.15);
+    color: #059669;
+}
+[data-theme="light"] .nav-status-dot {
+    background: #10b981;
+}
+
+[data-theme="light"] .nav-user-name {
+    color: #0f172a;
+}
+[data-theme="light"] .nav-user-email {
+    color: #94a3b8;
+}
+[data-theme="light"] .nav-section-label {
+    color: #94a3b8;
+}
+
+[data-theme="light"] .nav-item-badge {
+    background: rgba(220,38,38,0.12);
+    color: #dc2626;
+}
+[data-theme="light"] .nav-item-badge.medium {
+    background: rgba(202,138,4,0.12);
+    color: #ca8a04;
+}
+[data-theme="light"] .nav-item-badge.low {
+    background: rgba(22,163,74,0.12);
+    color: #16a34a;
+}
+
+[data-theme="light"] .nav-dropdown-item.danger {
+    color: #dc2626;
+}
+[data-theme="light"] .nav-dropdown-item.danger:hover {
+    background: rgba(220,38,38,0.08);
+}
+
+[data-theme="light"] .nav-user-avatar {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+}
+
+/* ===== RESPONSIVE — collapse sidebar on small screens ===== */
+@media (max-width: 900px) {
+    :root {
+        --nav-width: 56px;
+    }
+    .nav-brand-text,
+    .nav-item-label,
+    .nav-section-label,
+    .nav-status-chip,
+    .nav-user-info,
+    .nav-item-badge {
+        display: none;
+    }
+    .nav-brand-inner { justify-content: center; }
+    .nav-item { justify-content: center; padding: 10px 0; }
+    .nav-user-btn { justify-content: center; padding: 10px 0; }
+}
+
+@media (max-width: 600px) {
+    :root { --nav-width: 0px; }
+    .left-nav { display: none; }
+}

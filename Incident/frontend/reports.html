@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Reports &amp; Analytics</title>
+    <meta name="description" content="Incident analytics, tier distribution, and trend reports for InciCare incident management.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        /* ═══════════════════════════════════════════════
+           REPORTS PAGE — PREMIUM ANIMATED UI
+        ═══════════════════════════════════════════════ */
+
+        /* ── Hero Banner ── */
+        .reports-hero {
+            background: linear-gradient(135deg, rgba(52,211,153,0.08) 0%, rgba(99,102,241,0.1) 50%, rgba(236,72,153,0.06) 100%);
+            border: 1px solid rgba(52,211,153,0.15);
+            border-radius: 20px;
+            padding: 28px 32px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .reports-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(52,211,153,0.14), transparent 70%);
+            border-radius: 50%;
+            animation: heroOrb 6s ease-in-out infinite;
+        }
+        .reports-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -40px; left: 20%;
+            width: 160px; height: 160px;
+            background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%);
+            border-radius: 50%;
+            animation: heroOrb 8s ease-in-out infinite reverse;
+        }
+        @keyframes heroOrb {
+            0%, 100% { transform: scale(1) translate(0,0); }
+            50%       { transform: scale(1.25) translate(10px, -10px); }
+        }
+        .reports-hero-content { position: relative; z-index: 1; }
+        .reports-hero h2 {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #34d399 0%, #6ee7b7 50%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .reports-hero p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            max-width: 520px;
+        }
+        .hero-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .hero-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid;
+            animation: badgeFade 0.6s ease forwards;
+            opacity: 0;
+        }
+        .hero-badge-pill:nth-child(1) { animation-delay: 0.1s; background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.3); color: #34d399; }
+        .hero-badge-pill:nth-child(2) { animation-delay: 0.2s; background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: #818cf8; }
+        .hero-badge-pill:nth-child(3) { animation-delay: 0.3s; background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.3); color: #f472b6; }
+        @keyframes badgeFade {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Page Container ── */
+        .reports-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 28px 32px 100px;
+        }
+
+        /* ── Summary Stat Cards ── */
+        .report-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .report-summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px 18px 18px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), border-color 0.3s, box-shadow 0.3s;
+            animation: cardSlideIn 0.5s ease both;
+        }
+        .report-summary-card:nth-child(1) { animation-delay: 0.05s; }
+        .report-summary-card:nth-child(2) { animation-delay: 0.12s; }
+        .report-summary-card:nth-child(3) { animation-delay: 0.19s; }
+        .report-summary-card:nth-child(4) { animation-delay: 0.26s; }
+        .report-summary-card:nth-child(5) { animation-delay: 0.33s; }
+        .report-summary-card:nth-child(6) { animation-delay: 0.40s; }
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(24px) scale(0.94); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .report-summary-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: var(--card-glow, transparent);
+            opacity: 0; transition: opacity 0.3s;
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        .report-summary-card:hover {
+            transform: translateY(-7px) scale(1.03);
+            box-shadow: 0 22px 44px rgba(0,0,0,0.35), var(--card-shadow, none);
+        }
+        .report-summary-card:hover::before { opacity: 1; }
+
+        .rsc-total { --card-glow: linear-gradient(135deg, rgba(52,211,153,0.07), transparent); --card-shadow: 0 0 24px rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.15); }
+        .rsc-total:hover { border-color: rgba(52,211,153,0.45); }
+        .rsc-crit  { --card-glow: linear-gradient(135deg, rgba(248,113,113,0.09), transparent); --card-shadow: 0 0 24px rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.15); }
+        .rsc-crit:hover  { border-color: rgba(248,113,113,0.45); }
+        .rsc-med   { --card-glow: linear-gradient(135deg, rgba(251,191,36,0.09), transparent); --card-shadow: 0 0 24px rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.15); }
+        .rsc-med:hover   { border-color: rgba(251,191,36,0.45); }
+        .rsc-low   { --card-glow: linear-gradient(135deg, rgba(74,222,128,0.07), transparent); --card-shadow: 0 0 24px rgba(74,222,128,0.18); border-color: rgba(74,222,128,0.12); }
+        .rsc-low:hover   { border-color: rgba(74,222,128,0.45); }
+        .rsc-acked { --card-glow: linear-gradient(135deg, rgba(129,140,248,0.09), transparent); --card-shadow: 0 0 24px rgba(129,140,248,0.18); border-color: rgba(129,140,248,0.15); }
+        .rsc-acked:hover { border-color: rgba(129,140,248,0.45); }
+        .rsc-locs  { --card-glow: linear-gradient(135deg, rgba(52,211,153,0.05), transparent); --card-shadow: 0 0 24px rgba(52,211,153,0.14); border-color: rgba(52,211,153,0.12); }
+        .rsc-locs:hover  { border-color: rgba(52,211,153,0.45); }
+
+        /* Pulsing ring icon wrapper */
+        .rsc-icon-wrap {
+            position: relative;
+            width: 52px; height: 52px;
+            margin: 0 auto 12px;
+        }
+        .rsc-icon-ring {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 2px solid var(--ring-color, rgba(52,211,153,0.3));
+            animation: ringPulse 2.5s ease-in-out infinite;
+        }
+        .rsc-icon-ring:nth-child(2) { animation-delay: 0.9s; }
+        @keyframes ringPulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50%       { transform: scale(1.3); opacity: 0; }
+        }
+        .rsc-icon-bg {
+            position: absolute; inset: 6px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            background: var(--icon-bg, rgba(52,211,153,0.12));
+        }
+        .rsc-value {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            font-size: 36px; font-weight: 900;
+            letter-spacing: -1px; line-height: 1;
+            margin-bottom: 6px;
+        }
+        .rsc-label {
+            font-size: 11px; font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+        .rsc-sub { font-size: 11px; color: var(--text-secondary); }
+
+        /* ── Section Cards ── */
+        .report-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px 28px;
+            margin-bottom: 22px;
+            position: relative;
+            overflow: hidden;
+            animation: sectionReveal 0.6s ease both;
+            transition: border-color 0.3s;
+        }
+        .report-section:nth-of-type(1) { animation-delay: 0.25s; }
+        .report-section:nth-of-type(2) { animation-delay: 0.35s; }
+        .report-section:nth-of-type(3) { animation-delay: 0.45s; }
+        .report-section:nth-of-type(4) { animation-delay: 0.55s; }
+        .report-section:nth-of-type(5) { animation-delay: 0.65s; }
+        @keyframes sectionReveal {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .report-section::after {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(52,211,153,0.04), transparent 60%);
+            opacity: 0; transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        .report-section:hover { border-color: rgba(52,211,153,0.12); }
+        .report-section:hover::after { opacity: 1; }
+
+        .report-section-title {
+            font-size: 14px; font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-title-badge {
+            margin-left: auto;
+            font-size: 10px; font-weight: 600;
+            padding: 3px 10px; border-radius: 10px;
+            background: rgba(52,211,153,0.12);
+            color: #34d399;
+            border: 1px solid rgba(52,211,153,0.2);
+        }
+        .section-icon-accent {
+            width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+
+        /* ── Donut layout ── */
+        .dist-layout { display: flex; align-items: center; justify-content: center; }
+        .dist-chart-wrap { flex: 0 0 240px; position: relative; }
+
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-14px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Donut center label */
+        .donut-center-label {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .donut-center-label .dcl-val {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            font-size: 26px; font-weight: 900;
+            color: var(--text-primary); line-height: 1;
+        }
+        .donut-center-label .dcl-label {
+            font-size: 9px; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px;
+        }
+
+        /* ── Trend Range Buttons ── */
+        .trend-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+        .trend-btn {
+            padding: 4px 12px; border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent; color: var(--text-secondary);
+            font-size: 11px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .trend-btn:hover, .trend-btn.active {
+            background: rgba(52,211,153,0.12);
+            border-color: rgba(52,211,153,0.3);
+            color: #34d399;
+        }
+        .trend-chart-wrap { position: relative; height: 260px; }
+
+        /* ── Animated Horizontal Bars ── */
+        .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+        .bar-row { display: flex; align-items: center; gap: 14px; animation: fadeRight 0.5s ease both; }
+        .bar-label { width: 130px; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; text-align: right; font-weight: 500; }
+        .bar-track {
+            flex: 1; height: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px; overflow: hidden; position: relative;
+        }
+        .bar-fill {
+            height: 100%; border-radius: 10px; width: 0%;
+            transition: width 1s cubic-bezier(.4,0,.2,1);
+            position: relative;
+        }
+        .bar-fill::after {
+            content: '';
+            position: absolute; right: 0; top: 0; bottom: 0;
+            width: 6px; background: rgba(255,255,255,0.4);
+            border-radius: 0 10px 10px 0; filter: blur(2px);
+        }
+        .bar-fill.t1  { background: linear-gradient(90deg, #dc2626, #f87171, #fca5a5); }
+        .bar-fill.t2  { background: linear-gradient(90deg, #ca8a04, #fbbf24, #fde68a); }
+        .bar-fill.t3  { background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80); }
+        .bar-fill.ack { background: linear-gradient(90deg, #4f46e5, #818cf8, #a5b4fc); }
+        .bar-count { font-size: 13px; font-weight: 800; color: var(--text-primary); width: 28px; text-align: left; flex-shrink: 0; }
+
+        /* ── Table ── */
+        .report-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(42,53,72,0.5); }
+        .report-table { width: 100%; border-collapse: collapse; }
+        .report-table thead tr { background: rgba(255,255,255,0.02); }
+        .report-table th {
+            font-size: 10px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+            text-align: left; white-space: nowrap;
+        }
+        .report-table td {
+            padding: 11px 14px; border-bottom: 1px solid rgba(42,53,72,0.4);
+            font-size: 13px; color: var(--text-secondary);
+            vertical-align: middle; transition: background 0.15s;
+        }
+        .report-table tbody tr { animation: tableRowIn 0.4s ease both; }
+        .report-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+        .report-table tbody tr:nth-child(2) { animation-delay: 0.10s; }
+        .report-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+        .report-table tbody tr:nth-child(4) { animation-delay: 0.20s; }
+        .report-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+        .report-table tbody tr:nth-child(6) { animation-delay: 0.30s; }
+        @keyframes tableRowIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .report-table tr:last-child td { border-bottom: none; }
+        .report-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
+        .tier-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 10px; font-weight: 700;
+            padding: 3px 10px; border-radius: 12px;
+        }
+        .tier-pill.t1 { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+        .tier-pill.t2 { background: rgba(234,179,8,0.15);  color: #fbbf24; border: 1px solid rgba(234,179,8,0.2); }
+        .tier-pill.t3 { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; font-weight: 600;
+            padding: 3px 10px; border-radius: 10px;
+        }
+        .status-badge.acked   { background: rgba(74,222,128,0.1); color: #4ade80; }
+        .status-badge.pending { background: rgba(251,191,36,0.1);  color: #fbbf24; }
+        .status-badge-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: currentColor;
+            animation: statusPulse 2s infinite;
+        }
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.6); }
+        }
+
+        /* ── Timeline 3D Cylinder Roller Wheel (3D 滚轮/滚筒效果) ── */
+        .timeline-scroll-wrap {
+            position: relative;
+            padding: 8px 0;
+            perspective: 1000px;
+        }
+        .timeline-container {
+            max-height: 390px;
+            overflow-y: auto;
+            position: relative;
+            padding-right: 8px;
+            padding-top: 12px;
+            padding-bottom: 12px;
+            perspective: 1000px;
+            perspective-origin: 50% 50%;
+            scroll-behavior: smooth;
+        }
+        .timeline-container::-webkit-scrollbar { width: 5px; }
+        .timeline-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .timeline-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(52,211,153,0.5), rgba(14,165,233,0.5));
+            border-radius: 4px;
+        }
+
+        /* Inner track wrapping all items so vertical line scrolls & extends with content */
+        .timeline-track {
+            position: relative;
+            padding-left: 36px;
+            padding-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transform-style: preserve-3d;
+        }
+        /* Vertical connecting line */
+        .timeline-track::before {
+            content: '';
+            position: absolute;
+            top: 14px;
+            bottom: 24px;
+            left: 17px;
+            width: 2px;
+            background: linear-gradient(180deg, #f87171 0%, #fbbf24 50%, rgba(52,211,153,0.3) 100%);
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative;
+            animation: tlItemIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transform-style: preserve-3d;
+            will-change: transform, opacity;
+        }
+        @keyframes tlItemIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Timeline node dot */
+        .tl-node {
+            position: absolute;
+            left: -27px;
+            top: 14px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--node-color, #34d399);
+            box-shadow: 0 0 10px var(--node-glow, rgba(52,211,153,0.4));
+            z-index: 2;
+            transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.35s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tl-node::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--node-color, #34d399);
+        }
+        /* Mouse hover on items produces NO visual changes per user request */
+        .timeline-item:hover .tl-node {
+            transform: none;
+            box-shadow: 0 0 10px var(--node-glow, rgba(52,211,153,0.4));
+        }
+
+        .timeline-item.t1 { --node-color: #f87171; --node-glow: rgba(248,113,113,0.5); }
+        .timeline-item.t2 { --node-color: #fbbf24; --node-glow: rgba(251,191,36,0.5); }
+        .timeline-item.t3 { --node-color: #4ade80; --node-glow: rgba(74,222,128,0.5); }
+
+        /* Timeline Content Card on Roller Wheel */
+        .tl-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            transition: transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.45s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+            position: relative;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+        /* Mouse hover produces NO change per user request */
+        .timeline-item:hover .tl-content {
+            border-color: var(--border);
+            background: var(--bg-secondary);
+        }
+
+        /* 3D Wheel Center Focus (Current item facing front at drum axis) */
+        .timeline-item.wheel-center .tl-content {
+            border-color: rgba(52, 211, 153, 0.55);
+            background: var(--bg-card);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 22px rgba(52,211,153,0.18);
+        }
+        .timeline-item.wheel-center .tl-node {
+            transform: scale(1.3);
+            box-shadow: 0 0 18px var(--node-color, #34d399);
+        }
+
+        .tl-main { flex: 1; min-width: 0; }
+        .tl-header-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .tl-id {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--accent);
+            background: rgba(52,211,153,0.1);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(52,211,153,0.2);
+        }
+        .tl-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tl-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .tl-time { display: flex; align-items: center; gap: 4px; }
+
+        .tl-side {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .incidents-count-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ── Empty / Loading States ── */
+        .report-empty { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .report-empty-icon {
+            font-size: 42px; margin-bottom: 12px;
+            animation: floatIcon 3s ease-in-out infinite; display: block;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
+        }
+        .report-empty p { font-size: 14px; color: var(--text-muted); margin-top: 8px; }
+
+        /* Skeleton loading */
+        .chart-skeleton {
+            border-radius: 8px;
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0.03) 25%,
+                rgba(255,255,255,0.08) 50%,
+                rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: skeletonWave 1.5s ease infinite;
+        }
+        @keyframes skeletonWave {
+            from { background-position: 200% 0; }
+            to   { background-position: -200% 0; }
+        }
+
+        /* ── Refresh Button ── */
+        .refresh-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 10px;
+            border: 1px solid rgba(52,211,153,0.3);
+            background: rgba(52,211,153,0.08);
+            color: #34d399; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .refresh-btn:hover {
+            background: rgba(52,211,153,0.16);
+            border-color: rgba(52,211,153,0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(52,211,153,0.15);
+        }
+        .refresh-btn:active { transform: scale(0.97); }
+        .refresh-btn .spin { display: inline-block; transition: transform 0.45s; }
+        .refresh-btn:hover .spin { transform: rotate(180deg); }
+
+        /* ── Scrolling Ticker Bar ── */
+        .ticker-bar {
+            background: rgba(52,211,153,0.05);
+            border: 1px solid rgba(52,211,153,0.12);
+            border-radius: 10px;
+            overflow: hidden; margin-bottom: 22px; padding: 8px 0;
+        }
+        .ticker-track {
+            display: flex; gap: 0;
+            animation: tickerScroll 26s linear infinite;
+            white-space: nowrap;
+        }
+        @keyframes tickerScroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+        .ticker-item {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0 26px; font-size: 11px; font-weight: 600;
+            color: var(--text-secondary);
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+        .ticker-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ── Source chart wrap ── */
+        .source-chart-wrap { position: relative; height: 200px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 720px) {
+            .reports-container { padding: 16px 16px 80px; }
+            .dist-chart-wrap { flex: 0 0 auto; max-width: 220px; margin: 0 auto; }
+            .reports-hero { padding: 20px; }
+            .reports-hero h2 { font-size: 20px; }
+            .report-summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .report-section { padding: 18px 16px; }
+        }
+        @media (max-width: 480px) {
+            .report-summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Reports</h1>
+                <span class="subtitle">Incident Analytics &amp; Insights</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" id="refresh-btn" onclick="handleRefresh()">
+                <span class="spin">↺</span> Refresh
+            </button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge">📊 Analytics Dashboard</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <span id="live-time" class="live-time-text">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="reports-container">
+
+        <!-- ── Hero Banner ── -->
+        <div class="reports-hero">
+            <div class="reports-hero-content">
+                <h2>📊 Incident Analytics</h2>
+                <p>Real-time overview of all incidents, severity tiers, response rates, and trend analysis across your monitored infrastructure.</p>
+                <div class="hero-badges">
+                    <span class="hero-badge-pill">✦ Live Data</span>
+                    <span class="hero-badge-pill">⚡ Auto-Refresh</span>
+                    <span class="hero-badge-pill">🎯 Tier Tracking</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Summary Cards ── -->
+        <div class="report-summary-grid" id="summary-grid">
+            <div class="report-summary-card rsc-total">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(52,211,153,0.35)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(52,211,153,0.12)">📬</div>
+                </div>
+                <div class="rsc-value" id="rep-total" style="color:#34d399">—</div>
+                <div class="rsc-label">Total Incidents</div>
+                <div class="rsc-sub">All time</div>
+            </div>
+            <div class="report-summary-card rsc-crit">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(248,113,113,0.4)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(248,113,113,0.12)">🔴</div>
+                </div>
+                <div class="rsc-value" id="rep-t1" style="color:#f87171">—</div>
+                <div class="rsc-label">Critical</div>
+                <div class="rsc-sub">Tier 1</div>
+            </div>
+            <div class="report-summary-card rsc-med">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(251,191,36,0.4)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(251,191,36,0.12)">🟡</div>
+                </div>
+                <div class="rsc-value" id="rep-t2" style="color:#fbbf24">—</div>
+                <div class="rsc-label">Medium</div>
+                <div class="rsc-sub">Tier 2</div>
+            </div>
+            <div class="report-summary-card rsc-low">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(74,222,128,0.35)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(74,222,128,0.1)">🟢</div>
+                </div>
+                <div class="rsc-value" id="rep-t3" style="color:#4ade80">—</div>
+                <div class="rsc-label">Low</div>
+                <div class="rsc-sub">Tier 3</div>
+            </div>
+            <div class="report-summary-card rsc-acked">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(129,140,248,0.4)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(129,140,248,0.12)">✅</div>
+                </div>
+                <div class="rsc-value" id="rep-ack" style="color:#818cf8">—</div>
+                <div class="rsc-label">Acknowledged</div>
+                <div class="rsc-sub">Rate: <span id="rep-ack-rate" style="font-weight:700;color:#818cf8">—</span></div>
+            </div>
+            <div class="report-summary-card rsc-locs">
+                <div class="rsc-icon-wrap">
+                    <div class="rsc-icon-ring" style="--ring-color:rgba(52,211,153,0.3)"></div>
+                    <div class="rsc-icon-bg" style="--icon-bg:rgba(52,211,153,0.1)">📍</div>
+                </div>
+                <div class="rsc-value" id="rep-locs" style="color:#34d399">—</div>
+                <div class="rsc-label">Locations</div>
+                <div class="rsc-sub">Geocoded pins</div>
+            </div>
+        </div>
+
+        <!-- ── Live Stats Ticker ── -->
+        <div class="ticker-bar" id="ticker-bar" style="display:none">
+            <div class="ticker-track" id="ticker-track"></div>
+        </div>
+
+        <!-- ── Distribution Donut + Legend ── -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <div class="section-icon-accent" style="background:rgba(99,102,241,0.12); color:#818cf8">
+                    <i data-lucide="pie-chart"></i>
+                </div>
+                Tier Distribution
+                <span class="section-title-badge">Live</span>
+            </div>
+            <div class="dist-layout" id="dist-layout">
+                <div class="dist-chart-wrap">
+                    <canvas id="dist-chart" height="240" width="240"></canvas>
+                    <div class="donut-center-label">
+                        <div class="dcl-val" id="donut-total">—</div>
+                        <div class="dcl-label">Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Severity Breakdown Bars ── -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <div class="section-icon-accent" style="background:rgba(52,211,153,0.1); color:#34d399">
+                    <i data-lucide="bar-chart-2"></i>
+                </div>
+                Severity Breakdown
+            </div>
+            <div class="bar-chart" id="tier-bar-chart">
+                <div class="report-empty" style="padding:10px 0;font-size:12px;">Loading…</div>
+            </div>
+        </div>
+
+        <!-- ── Time-Series Trend Chart ── -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <div class="section-icon-accent" style="background:rgba(236,72,153,0.1); color:#f472b6">
+                    <i data-lucide="trending-up"></i>
+                </div>
+                Incident Trend
+                <div class="trend-controls">
+                    <button class="trend-btn" id="tbtn-24h" onclick="setTrendRange('24h')">24H</button>
+                    <button class="trend-btn active" id="tbtn-7d" onclick="setTrendRange('7d')">7D</button>
+                    <button class="trend-btn" id="tbtn-30d" onclick="setTrendRange('30d')">30D</button>
+                </div>
+            </div>
+            <div class="trend-chart-wrap" id="trend-chart-wrap">
+                <div class="chart-skeleton" style="height:260px;"></div>
+            </div>
+        </div>
+
+        <!-- ── Recent Incident Stream ── -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <div class="section-icon-accent" style="background:rgba(52,211,153,0.12); color:#34d399; font-size:16px;">
+                    📜
+                </div>
+                Recent Incident Stream
+            </div>
+            <div id="top-incidents-wrap">
+                <div class="report-empty">
+                    <span class="report-empty-icon">📋</span>
+                    <p>Loading incidents…</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Source Breakdown Chart ── -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <div class="section-icon-accent" style="background:rgba(14,165,233,0.1); color:#38bdf8">
+                    <i data-lucide="link"></i>
+                </div>
+                Incidents by Source
+                <span class="section-title-badge" id="source-count-badge" style="display:none"></span>
+            </div>
+            <div class="source-chart-wrap" id="source-chart-wrap">
+                <div class="chart-skeleton" style="height:200px;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        startClock('live-time');
+
+        // Chart instances
+        let distChart   = null;
+        let sourceChart = null;
+        let trendChart  = null;
+        const TREND_RANGES = {
+            '24h': { label: '24H', granularity: 'hour', days: 1 },
+            '7d':  { label: '7D',  granularity: 'day',  days: 7 },
+            '30d': { label: '30D', granularity: 'day',  days: 30 },
+        };
+        let currentTrendRange = '7d';
+
+        const chartTextColor = '#8b98a9';
+        const chartGridColor = 'rgba(255,255,255,0.05)';
+
+        /* ── Animated Count-Up ── */
+        function animateCount(el, target, duration = 900) {
+            const start = performance.now();
+            const from = parseFloat(el.textContent) || 0;
+            function tick(now) {
+                const elapsed = now - start;
+                const t = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - t, 3);
+                const val = Math.round(from + (target - from) * ease);
+                el.textContent = val;
+                if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        /* ── Animate bar widths ── */
+        function animateBars() {
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.bar-fill[data-target]').forEach(bar => {
+                    bar.style.width = bar.dataset.target + '%';
+                });
+            });
+        }
+
+        /* ── Refresh handler ── */
+        async function handleRefresh() {
+            const btn = document.getElementById('refresh-btn');
+            btn.style.opacity = '0.6';
+            btn.style.pointerEvents = 'none';
+            await Promise.all([loadReports(), loadTrendChart()]);
+            btn.style.opacity = '';
+            btn.style.pointerEvents = '';
+        }
+
+        /* ── Ticker Builder ── */
+        function buildTicker(stats) {
+            const items = [
+                { dot: '#34d399', label: `Total: ${stats.total}` },
+                { dot: '#f87171', label: `Critical: ${stats.t1}` },
+                { dot: '#fbbf24', label: `Medium: ${stats.t2}` },
+                { dot: '#4ade80', label: `Low: ${stats.t3}` },
+                { dot: '#818cf8', label: `Ack Rate: ${stats.ackRate}` },
+                { dot: '#38bdf8', label: `Locations: ${stats.locs}` },
+            ];
+            // Duplicate for seamless loop
+            const doubled = [...items, ...items];
+            const track = document.getElementById('ticker-track');
+            track.innerHTML = doubled.map(it =>
+                `<span class="ticker-item"><span class="ticker-dot" style="background:${it.dot}"></span>${it.label}</span>`
+            ).join('');
+            document.getElementById('ticker-bar').style.display = '';
+        }
+
+        /* ── Main Data Loader ── */
+        async function loadReports() {
+            const userId = getUserId();
+            if (!userId) {
+                document.getElementById('top-incidents-wrap').innerHTML = `
+                    <div class="report-empty">
+                        <span class="report-empty-icon">🔐</span>
+                        <p><a href="/" style="color:#34d399;font-weight:600;">Sign in</a> to view your reports.</p>
+                    </div>`;
+                return;
+            }
+            try {
+                const data = await apiGet(`/api/incidents?user_id=${userId}`);
+                const incs = data.incidents || [];
+
+                const t1    = incs.filter(i => i.tier === 1).length;
+                const t2    = incs.filter(i => i.tier === 2).length;
+                const t3    = incs.filter(i => i.tier === 3).length;
+                const ack   = incs.filter(i => i.acknowledged).length;
+                const locs  = incs.reduce((s, i) => s + (i.locations || []).length, 0);
+                const total = incs.length;
+                const ackRate = total ? Math.round((ack / total) * 100) + '%' : '—';
+
+                // Animated counters
+                animateCount(document.getElementById('rep-total'), total);
+                animateCount(document.getElementById('rep-t1'),    t1);
+                animateCount(document.getElementById('rep-t2'),    t2);
+                animateCount(document.getElementById('rep-t3'),    t3);
+                animateCount(document.getElementById('rep-ack'),   ack);
+                document.getElementById('rep-ack-rate').textContent = ackRate;
+                animateCount(document.getElementById('rep-locs'),  locs);
+                document.getElementById('donut-total').textContent = total;
+
+                buildTicker({ total, t1, t2, t3, ackRate, locs });
+
+                // Destroy old charts
+                if (distChart)   { distChart.destroy();   distChart   = null; }
+                if (sourceChart) { sourceChart.destroy(); sourceChart = null; }
+
+                if (total === 0) {
+                    document.getElementById('dist-layout').innerHTML =
+                        `<div class="report-empty"><span class="report-empty-icon">📭</span><p>No data yet.</p></div>`;
+                    document.getElementById('source-chart-wrap').innerHTML =
+                        `<div class="report-empty"><span class="report-empty-icon">📭</span><p>No source data.</p></div>`;
+                    document.getElementById('tier-bar-chart').innerHTML =
+                        `<div class="report-empty"><span class="report-empty-icon">📭</span><p>No data yet.</p></div>`;
+                } else {
+
+                    // ── Donut Chart ──
+                    const distCtx = document.getElementById('dist-chart').getContext('2d');
+                    distChart = new Chart(distCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Critical', 'Medium', 'Low'],
+                            datasets: [{
+                                data: [t1, t2, t3],
+                                backgroundColor: ['#ef4444', '#eab308', '#22c55e'],
+                                borderColor: 'transparent',
+                                borderWidth: 3,
+                                hoverOffset: 10,
+                                hoverBorderColor: ['#f87171', '#fbbf24', '#4ade80'],
+                                hoverBorderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            cutout: '68%',
+                            layout: {
+                                padding: 24
+                            },
+                            animation: { animateRotate: true, duration: 1200, easing: 'easeInOutQuart' },
+                            onHover: (event, activeElements) => {
+                                const centerEl = document.querySelector('.donut-center-label');
+                                if (centerEl) {
+                                    if (activeElements && activeElements.length > 0) {
+                                        centerEl.style.opacity = '0.15';
+                                        centerEl.style.transform = 'translate(-50%, -50%) scale(0.9)';
+                                    } else {
+                                        centerEl.style.opacity = '1';
+                                        centerEl.style.transform = 'translate(-50%, -50%) scale(1)';
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    padding: 10,
+                                    caretPadding: 8,
+                                    cornerRadius: 8,
+                                    backgroundColor: 'rgba(26, 35, 50, 0.95)',
+                                    borderColor: 'rgba(52, 211, 153, 0.4)',
+                                    borderWidth: 1,
+                                    titleFont: { size: 12, weight: '700' },
+                                    bodyFont: { size: 12 },
+                                    callbacks: {
+                                        label: ctx => ` ${ctx.label}: ${ctx.raw} (${total ? Math.round(ctx.raw / total * 100) : 0}%)`
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Restore the center label when the pointer leaves the canvas,
+                    // since Chart.js's onHover doesn't always fire on leave.
+                    distChart.canvas.addEventListener('mouseleave', () => {
+                        const centerEl = document.querySelector('.donut-center-label');
+                        if (centerEl) {
+                            centerEl.style.opacity = '1';
+                            centerEl.style.transform = 'translate(-50%, -50%) scale(1)';
+                        }
+                    });
+
+                    // ── Animated Severity Breakdown Bars ──
+                    const maxVal = Math.max(t1, t2, t3, ack, 1);
+                    document.getElementById('tier-bar-chart').innerHTML = [
+                        { label: '🔴 Critical',     val: t1,  cls: 't1' },
+                        { label: '🟡 Medium',       val: t2,  cls: 't2' },
+                        { label: '🟢 Low',          val: t3,  cls: 't3' },
+                        { label: '✅ Acknowledged', val: ack, cls: 'ack' },
+                    ].map((item, idx) => `
+                        <div class="bar-row" style="animation-delay:${0.08 + idx * 0.12}s">
+                            <div class="bar-label">${item.label}</div>
+                            <div class="bar-track">
+                                <div class="bar-fill ${item.cls}" data-target="${Math.round(item.val / maxVal * 100)}"></div>
+                            </div>
+                            <div class="bar-count">${item.val}</div>
+                        </div>`).join('');
+
+                    // ── Source Bar Chart ──
+                    const sourceCounts = {};
+                    incs.forEach(i => { sourceCounts[i.source] = (sourceCounts[i.source] || 0) + 1; });
+                    const srcEntries = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
+                    const palette = ['#6366f1','#8b5cf6','#ec4899','#f97316','#0ea5e9','#14b8a6','#a855f7'];
+
+                    document.getElementById('source-chart-wrap').innerHTML = `<canvas id="source-chart"></canvas>`;
+                    document.getElementById('source-count-badge').textContent = `${srcEntries.length} sources`;
+                    document.getElementById('source-count-badge').style.display = '';
+
+                    const srcCtx = document.getElementById('source-chart').getContext('2d');
+                    sourceChart = new Chart(srcCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: srcEntries.map(([s]) => s),
+                            datasets: [{
+                                label: 'Incidents',
+                                data: srcEntries.map(([, c]) => c),
+                                backgroundColor: srcEntries.map((_, i) => palette[i % palette.length] + 'cc'),
+                                borderColor:     srcEntries.map((_, i) => palette[i % palette.length]),
+                                borderWidth: 1.5,
+                                borderRadius: 6,
+                                borderSkipped: false,
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: { duration: 1000, easing: 'easeOutQuart' },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: ctx => ` ${ctx.raw} incidents` } }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: chartGridColor },
+                                    ticks: { color: chartTextColor, font: { size: 11 }, stepSize: 1 }
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { color: chartTextColor, font: { size: 12 } }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // ── Timeline (时间线日志流) ──
+                const topList = incs; // Include all incidents (Critical, Medium, Low)
+                if (topList.length === 0) {
+                    document.getElementById('top-incidents-wrap').innerHTML = `
+                        <div class="report-empty">
+                            <span class="report-empty-icon">🎉</span>
+                            <p>No incidents recorded yet. Great work!</p>
+                        </div>`;
+                } else {
+                    document.getElementById('top-incidents-wrap').innerHTML = `
+                        <div class="incidents-count-badge">
+                            <span>Showing ${topList.length} total events</span>
+                            <span style="font-size:10px;color:var(--accent);">Scroll stream 📜</span>
+                        </div>
+                        <div class="timeline-scroll-wrap">
+                            <div class="timeline-container">
+                                <div class="timeline-track">
+                                ${topList.map((i, idx) => `
+                                    <div class="timeline-item t${i.tier}" style="animation-delay:${idx * 0.05}s">
+                                        <div class="tl-node"></div>
+                                        <div class="tl-content">
+                                            <div class="tl-main">
+                                                <div class="tl-header-row">
+                                                    <span class="tl-id">#${i.id}</span>
+                                                    <span class="tl-title" title="${i.title}">${i.title}</span>
+                                                </div>
+                                                <div class="tl-meta">
+                                                    <span class="tl-time">🕒 ${i.created_at}</span>
+                                                    ${i.source ? `<span class="tl-source">📍 ${i.source}</span>` : ''}
+                                                </div>
+                                            </div>
+                                            <div class="tl-side">
+                                                <span class="tier-pill t${i.tier}">⬤ ${i.tier_label}</span>
+                                                ${i.acknowledged
+                                                    ? '<span class="status-badge acked"><span class="status-badge-dot"></span>Acked</span>'
+                                                    : '<span class="status-badge pending"><span class="status-badge-dot"></span>Pending</span>'
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>`).join('')}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
+                // Trigger bar animations after DOM settles
+                requestAnimationFrame(animateBars);
+
+            } catch (e) {
+                console.error('Reports load error:', e);
+                document.getElementById('top-incidents-wrap').innerHTML = `
+                    <div class="report-empty">
+                        <span class="report-empty-icon">⚠️</span>
+                        <p>Could not load data. Please try again.</p>
+                    </div>`;
+            }
+        }
+
+        /* ── Trend Range Toggle ── */
+        function setTrendRange(key) {
+            currentTrendRange = key;
+            Object.keys(TREND_RANGES).forEach(k => {
+                document.getElementById(`tbtn-${k}`).classList.toggle('active', k === key);
+            });
+            loadTrendChart();
+        }
+
+        /* ── Trend Chart ── */
+        async function loadTrendChart() {
+            const userId = getUserId();
+            if (!userId) return;
+
+            document.getElementById('trend-chart-wrap').innerHTML =
+                `<div class="chart-skeleton" style="height:260px;"></div>`;
+
+            try {
+                const range = TREND_RANGES[currentTrendRange] || TREND_RANGES['7d'];
+                const data = await apiGet(`/api/stats/timeseries?user_id=${userId}&granularity=${range.granularity}&days=${range.days}`);
+                const buckets = data.buckets || [];
+                if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+                document.getElementById('trend-chart-wrap').innerHTML = `<canvas id="trend-chart"></canvas>`;
+                const ctx = document.getElementById('trend-chart').getContext('2d');
+
+                const gradTotal = ctx.createLinearGradient(0, 0, 0, 260);
+                gradTotal.addColorStop(0,   'rgba(99,102,241,0.25)');
+                gradTotal.addColorStop(1,   'rgba(99,102,241,0.01)');
+
+                const gradCrit = ctx.createLinearGradient(0, 0, 0, 260);
+                gradCrit.addColorStop(0, 'rgba(239,68,68,0.15)');
+                gradCrit.addColorStop(1, 'rgba(239,68,68,0.01)');
+
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: buckets.map(b => range.granularity === 'hour' ? b.label.slice(11) : b.label.slice(5)),
+                        datasets: [
+                            {
+                                label: 'Total',
+                                data: buckets.map(b => b.total),
+                                borderColor: '#6366f1',
+                                backgroundColor: gradTotal,
+                                fill: true, tension: 0.4, borderWidth: 2.5,
+                                pointRadius: 3, pointHoverRadius: 6,
+                                pointBackgroundColor: '#6366f1',
+                                pointBorderColor: '#1a2332', pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Critical',
+                                data: buckets.map(b => b.critical),
+                                borderColor: '#ef4444',
+                                backgroundColor: gradCrit,
+                                fill: true, tension: 0.4, borderWidth: 2,
+                                pointRadius: 3, pointHoverRadius: 6,
+                                pointBackgroundColor: '#ef4444',
+                                pointBorderColor: '#1a2332', pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Finished',
+                                data: buckets.map(b => b.finished),
+                                borderColor: '#22c55e',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1.5, tension: 0.4,
+                                pointRadius: 2, pointHoverRadius: 5,
+                                borderDash: [5, 4], fill: false,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 900, easing: 'easeInOutQuart' },
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: chartTextColor,
+                                    usePointStyle: true, pointStyleWidth: 10,
+                                    padding: 18, font: { size: 12, weight: '600' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(26,35,50,0.95)',
+                                borderColor: 'rgba(52,211,153,0.2)',
+                                borderWidth: 1, padding: 12,
+                                titleFont: { size: 12, weight: '700' },
+                                bodyFont: { size: 12 },
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: chartGridColor },
+                                ticks: { color: chartTextColor, font: { size: 10 }, maxTicksLimit: 12 }
+                            },
+                            y: {
+                                grid: { color: chartGridColor },
+                                ticks: { color: chartTextColor, font: { size: 11 }, stepSize: 1 },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Trend chart error:', e);
+                document.getElementById('trend-chart-wrap').innerHTML =
+                    `<div class="report-empty"><span class="report-empty-icon">📉</span><p>Could not load trend data.</p></div>`;
+            }
+        }
+
+        /* ── 60 FPS Physics Spring-Damped 3D Roller Engine (极速平滑 60FPS 物理阻尼滚轮) ── */
+        let targetActivity = 0;    // 1 时激活 3D 滚轮，0 时恢复原样
+        let currentActivity = 0;   // 阻尼渐变值 (0.0 <-> 1.0)
+        let wheelRafId = null;
+        let lastScrollTime = 0;
+
+        function physicsWheelLoop() {
+            const container = document.querySelector('.timeline-container');
+            if (!container) {
+                wheelRafId = null;
+                return;
+            }
+
+            const items = container.querySelectorAll('.timeline-item');
+            if (!items.length) {
+                wheelRafId = null;
+                return;
+            }
+
+            // 检查滚动是否停止（110ms 内无新滚动动作）
+            const now = performance.now();
+            if (now - lastScrollTime > 110) {
+                targetActivity = 0;
+            }
+
+            // 物理弹簧插值 (Lerp / Dampening): currentActivity -> targetActivity
+            // 0.14 的阻尼系数提供如丝般顺滑的变形与弹回过度
+            currentActivity += (targetActivity - currentActivity) * 0.14;
+
+            // 当完全恢复静止（变形近乎为0）时：彻底清空内联样式并停止 RAF 帧循环（0 开销）
+            if (currentActivity < 0.002 && targetActivity === 0) {
+                currentActivity = 0;
+                items.forEach((item) => {
+                    const content = item.querySelector('.tl-content');
+                    const node = item.querySelector('.tl-node');
+                    if (content) {
+                        content.style.transform = '';
+                        content.style.opacity = '1';
+                    }
+                    if (node) {
+                        node.style.transform = '';
+                    }
+                });
+                wheelRafId = null;
+                return;
+            }
+
+            // 计算容器视口中心
+            const containerRect = container.getBoundingClientRect();
+            const containerCenter = containerRect.top + containerRect.height / 2;
+            const maxDistance = containerRect.height / 2;
+
+            items.forEach((item) => {
+                const itemRect = item.getBoundingClientRect();
+                const itemCenter = itemRect.top + itemRect.height / 2;
+                const distFromCenter = itemCenter - containerCenter;
+
+                let norm = distFromCenter / maxDistance;
+                norm = Math.max(-1.8, Math.min(1.8, norm));
+
+                // 3D 滚轮柔和微弧变形参数 (大幅降低弯曲度，保持极佳可读性与自然精细质感)
+                const rotateX = (-norm * 18) * currentActivity; // 倾角降至 18° (柔和微倾斜)
+                const translateZ = (-Math.pow(Math.abs(norm), 1.2) * 28) * currentActivity; // 纵深降至 28px (微 3D 悬浮)
+                const translateY = (Math.sin(norm * 1.0) * 6) * currentActivity; // 弧度平缓
+                const scale = 1 - (Math.pow(Math.abs(norm), 1.2) * 0.07) * currentActivity; // 缩放仅微调 7% (保持文字清晰)
+                const opacity = 1 - (Math.pow(Math.abs(norm), 1.4) * 0.22) * currentActivity; // 透明度降 22% (高对比度)
+
+                const content = item.querySelector('.tl-content');
+                const node = item.querySelector('.tl-node');
+
+                if (content) {
+                    content.style.transform = `perspective(900px) rotate3d(1, 0, 0, ${rotateX.toFixed(2)}deg) translate3d(0, ${translateY.toFixed(2)}px, ${translateZ.toFixed(2)}px) scale(${scale.toFixed(3)})`;
+                    content.style.opacity = opacity.toFixed(3);
+                    content.style.transformOrigin = norm < 0 ? 'center bottom' : 'center top';
+                }
+                if (node) {
+                    node.style.transform = `perspective(900px) translate3d(0, 0, ${(translateZ * 0.5).toFixed(2)}px) scale(${scale.toFixed(3)})`;
+                }
+            });
+
+            // 持续维持 60FPS GPU 动画帧
+            wheelRafId = requestAnimationFrame(physicsWheelLoop);
+        }
+
+        function triggerPhysicsWheel() {
+            targetActivity = 1.0;
+            lastScrollTime = performance.now();
+            if (!wheelRafId) {
+                wheelRafId = requestAnimationFrame(physicsWheelLoop);
+            }
+        }
+
+        // 仅当用户在近期事件流区域 (.timeline-container) 内滚动时才触发 3D 滚轮效果
+        function handleTimelineContainerScroll(e) {
+            const container = document.querySelector('.timeline-container');
+            if (!container) return;
+
+            // 严格判断：只有当滚动目标为该事件容器本身或其子元素时，才激活滚轮
+            if (e && e.target && (e.target === container || container.contains(e.target))) {
+                triggerPhysicsWheel();
+            }
+        }
+
+        // 绑定局部事件处理，防止滑动页面其他区域时误触发近期事件滚轮
+        document.addEventListener('scroll', handleTimelineContainerScroll, true);
+        window.addEventListener('resize', () => {
+            const container = document.querySelector('.timeline-container');
+            if (container) triggerPhysicsWheel();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+    <script src="nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initNav('reports');
+            loadReports();
+            loadTrendChart();
+        });
+    </script>
+</body>
+
+</html>
+

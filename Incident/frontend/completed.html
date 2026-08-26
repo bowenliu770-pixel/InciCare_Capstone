@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Completed Incidents</title>
+    <meta name="description" content="InciCare completed incidents — all resolved and finished alerts.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        .completed-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 28px 32px 80px;
+        }
+        .completed-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .completed-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .completed-filter-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .completed-filter-btn {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .completed-filter-btn.active,
+        .completed-filter-btn:hover {
+            background: rgba(34,197,94,0.12);
+            border-color: rgba(34,197,94,0.4);
+            color: #22c55e;
+        }
+        .completed-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            transition: border-color 0.15s, transform 0.15s;
+            animation: fadeSlideIn 0.3s ease both;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .completed-card:hover {
+            border-color: rgba(34,197,94,0.3);
+            transform: translateY(-1px);
+        }
+        .completed-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .completed-id {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+        .completed-tier-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .completed-tier-badge.t1 { background: rgba(239,68,68,0.15); color: #f87171; }
+        .completed-tier-badge.t2 { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+        .completed-tier-badge.t3 { background: rgba(34,197,94,0.15);  color: #4ade80; }
+        .completed-status-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 10px;
+            background: rgba(34,197,94,0.12);
+            color: #22c55e;
+            margin-left: auto;
+        }
+        .completed-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .completed-card-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .completed-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding-top: 10px;
+            border-top: 1px solid rgba(42,53,72,0.5);
+        }
+        .completed-card-meta span { display: flex; align-items: center; gap: 4px; }
+        .completed-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .completed-empty .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .completed-empty h3 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+        .completed-summary {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .completed-summary-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 110px;
+        }
+        .completed-summary-chip .chip-val {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .completed-summary-chip .chip-lbl {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Completed Incidents</h1>
+                <span class="subtitle">All resolved &amp; finished alerts</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" onclick="loadCompleted()">⟳ Refresh</button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge">✅ Completed</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <span id="live-time" class="live-time-text">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="completed-container">
+        <!-- Summary Chips -->
+        <div class="completed-summary" id="completed-summary" style="display:none;">
+            <div class="completed-summary-chip">
+                <span class="chip-val" id="chip-total">0</span>
+                <span class="chip-lbl">Total Finished</span>
+            </div>
+            <div class="completed-summary-chip">
+                <span class="chip-val" id="chip-t1" style="color:#f87171;">0</span>
+                <span class="chip-lbl">Critical</span>
+            </div>
+            <div class="completed-summary-chip">
+                <span class="chip-val" id="chip-t2" style="color:#fbbf24;">0</span>
+                <span class="chip-lbl">Medium</span>
+            </div>
+            <div class="completed-summary-chip">
+                <span class="chip-val" id="chip-t3" style="color:#4ade80;">0</span>
+                <span class="chip-lbl">Low</span>
+            </div>
+        </div>
+
+        <div class="completed-header-row">
+            <div class="completed-title">Finished Incidents</div>
+            <div style="font-size:12px; color:var(--text-muted);">
+                Incidents marked as Finished by your team
+            </div>
+        </div>
+
+        <div class="completed-filter-row">
+            <button class="completed-filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+            <button class="completed-filter-btn" data-filter="1" onclick="setFilter('1', this)">🔴 Critical</button>
+            <button class="completed-filter-btn" data-filter="2" onclick="setFilter('2', this)">🟡 Medium</button>
+            <button class="completed-filter-btn" data-filter="3" onclick="setFilter('3', this)">🟢 Low</button>
+        </div>
+
+        <div id="completed-list">
+            <div class="completed-empty">
+                <div class="empty-icon">⏳</div>
+                <h3>Loading…</h3>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        startClock('live-time');
+
+        let allFinished = [];
+        let currentFilter = 'all';
+
+        function setFilter(f, btn) {
+            currentFilter = f;
+            document.querySelectorAll('.completed-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderList();
+        }
+
+        function renderList() {
+            const container = document.getElementById('completed-list');
+            let items = allFinished;
+            if (currentFilter !== 'all') {
+                items = items.filter(i => i.tier == currentFilter);
+            }
+            if (items.length === 0) {
+                container.innerHTML = `<div class="completed-empty">
+                    <div class="empty-icon">✅</div>
+                    <h3>No Completed Incidents</h3>
+                    <p>Incidents you mark as "Finished" on the Overview will appear here.</p>
+                </div>`;
+                return;
+            }
+            container.innerHTML = items.map((inc, idx) => `
+                <div class="completed-card" style="animation-delay:${idx * 0.05}s;">
+                    <div class="completed-card-header">
+                        <span class="completed-id">${inc.id}</span>
+                        <span class="completed-tier-badge t${inc.tier}">${inc.tier_label}</span>
+                        ${inc.assigned_to ? `<span style="font-size:10px;color:#818cf8;font-weight:600;">👤 ${inc.assigned_to}</span>` : ''}
+                        <span class="completed-status-badge">✅ Finished</span>
+                    </div>
+                    <div class="completed-card-title">${inc.title}</div>
+                    <div class="completed-card-desc">${inc.description}</div>
+                    <div class="completed-card-meta">
+                        <span>📎 ${inc.source}</span>
+                        <span>🕐 Received: ${inc.created_at}</span>
+                        ${inc.finished_at ? `<span>✅ Finished: ${inc.finished_at}</span>` : ''}
+                        ${inc.acknowledged_by ? `<span>👤 By: ${inc.acknowledged_by}</span>` : ''}
+                        ${inc.classification_reason ? `<span style="font-style:italic;max-width:400px;">🤖 ${inc.classification_reason}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadCompleted() {
+            const userId = localStorage.getItem('comhub_user_id');
+            const container = document.getElementById('completed-list');
+            if (!userId) {
+                container.innerHTML = `<div class="completed-empty">
+                    <div class="empty-icon">🔐</div>
+                    <h3>Not Signed In</h3>
+                    <p>Please <a href="/" style="color:#34d399;">sign in from the Overview</a> to view completed incidents.</p>
+                </div>`;
+                return;
+            }
+            container.innerHTML = `<div class="completed-empty"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>`;
+            try {
+                const res = await fetch(`/api/incidents?user_id=${userId}`);
+                const data = await res.json();
+                allFinished = (data.incidents || []).filter(i => i.finished === true);
+
+                // Update summary chips
+                const t1 = allFinished.filter(i => i.tier === 1).length;
+                const t2 = allFinished.filter(i => i.tier === 2).length;
+                const t3 = allFinished.filter(i => i.tier === 3).length;
+                document.getElementById('chip-total').textContent = allFinished.length;
+                document.getElementById('chip-t1').textContent = t1;
+                document.getElementById('chip-t2').textContent = t2;
+                document.getElementById('chip-t3').textContent = t3;
+                if (allFinished.length > 0) {
+                    document.getElementById('completed-summary').style.display = 'flex';
+                }
+                renderList();
+            } catch (e) {
+                container.innerHTML = `<div class="completed-empty">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Could Not Load Data</h3>
+                    <p>Make sure the backend (app.py) is running.</p>
+                </div>`;
+            }
+        }
+    </script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initNav('completed');
+            loadCompleted();
+
+            // WebSocket: auto-refresh when an incident is finished on another page
+            try {
+                const socket = io();
+                const userId = localStorage.getItem('comhub_user_id');
+                if (userId) socket.emit('bind_user', userId);
+                socket.on('incident_updated', (payload) => {
+                    if (payload.client_user_id && userId && payload.client_user_id !== userId) return;
+                    if (payload.incident && payload.incident.finished) {
+                        console.log('📩 Completed page got finished incident, refreshing...');
+                        loadCompleted();
+                    }
+                });
+            } catch(e) { /* socket.io not available */ }
+        });
+    </script>
+</body>
+</html>

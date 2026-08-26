@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Pipeline &amp; Stats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="pipeline.css">
+    <link rel="stylesheet" href="nav.css">
+</head>
+
+<body>
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Pipeline &amp; Stats</h1>
+                <span class="subtitle">Processing Engine &amp; System Overview</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <div class="pipeline-hero">
+        <div class="pipeline-hero-content">
+            <h1 class="pipeline-hero-title">⚡ Processing Pipeline &amp; System Stats</h1>
+            <p class="pipeline-hero-sub">Real-time overview of the InciCare incident processing engine and alert routing infrastructure.</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pipeline-container">
+
+        <!-- Section 1: Processing Pipeline -->
+        <section class="pipeline-section">
+            <div class="pipeline-section-header">
+                <span class="pipeline-section-icon">⚡</span>
+                <h2>Processing Pipeline</h2>
+                <span class="pipeline-section-badge">4-Stage Engine</span>
+            </div>
+            <p class="pipeline-section-desc">Every incoming alert flows through this 4-stage pipeline — from ingestion to routing — with AI classification at its core.</p>
+
+            <div class="pipeline-flow">
+                <!-- Step 1 -->
+                <div class="pipeline-card">
+                    <div class="pipeline-card-header">
+                        <span class="pipeline-step-num">1</span>
+                        <div class="pipeline-card-title-area">
+                            <span class="pipeline-card-title">Multi-Source Ingestion</span>
+                            <span class="pipeline-status active">● Active</span>
+                        </div>
+                    </div>
+                    <p class="pipeline-card-desc">Real-time email monitoring via IMAP IDLE, webhook listeners, and syslog streams. New alerts are detected and ingested within milliseconds of arrival.</p>
+                    <div class="pipeline-card-tags">
+                        <span class="pipeline-tag">IMAP IDLE</span>
+                        <span class="pipeline-tag">Webhooks</span>
+                        <span class="pipeline-tag">Syslog</span>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="pipeline-arrow">↓</div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="pipeline-card">
+                    <div class="pipeline-card-header">
+                        <span class="pipeline-step-num">2</span>
+                        <div class="pipeline-card-title-area">
+                            <span class="pipeline-card-title">AI Classification &amp; Location Extraction</span>
+                            <span class="pipeline-status active">● Active</span>
+                        </div>
+                    </div>
+                    <p class="pipeline-card-desc">Each alert is analyzed by a local LLM (Llama 3.1 8B via Ollama) that reads the full email body. It classifies severity (Critical/Medium/Low) and simultaneously extracts real-world location names for map plotting.</p>
+                    <div class="pipeline-card-tags">
+                        <span class="pipeline-tag">Llama 3.1 8B</span>
+                        <span class="pipeline-tag">Ollama</span>
+                        <span class="pipeline-tag">100% Local</span>
+                        <span class="pipeline-tag">Location NER</span>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="pipeline-arrow">↓</div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="pipeline-card">
+                    <div class="pipeline-card-header">
+                        <span class="pipeline-step-num">3</span>
+                        <div class="pipeline-card-title-area">
+                            <span class="pipeline-card-title">Severity Triage, SLA &amp; Geocoding</span>
+                            <span class="pipeline-status active">● Active</span>
+                        </div>
+                    </div>
+                    <p class="pipeline-card-desc">Critical (Tier 1): 8 min SLA • Medium (Tier 2): 40 min SLA • Low (Tier 3): 4 hour SLA. Countdown timers start immediately. Extracted locations are geocoded via Nominatim (OpenStreetMap) and pinned on the incident map.</p>
+                    <div class="pipeline-card-tags">
+                        <span class="pipeline-tag t1">Tier 1: 8m</span>
+                        <span class="pipeline-tag t2">Tier 2: 40m</span>
+                        <span class="pipeline-tag t3">Tier 3: 4h</span>
+                        <span class="pipeline-tag">Nominatim</span>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="pipeline-arrow">↓</div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="pipeline-card">
+                    <div class="pipeline-card-header">
+                        <span class="pipeline-step-num">4</span>
+                        <div class="pipeline-card-title-area">
+                            <span class="pipeline-card-title">Multi-Channel Routing</span>
+                            <span class="pipeline-status active">● Active</span>
+                        </div>
+                    </div>
+                    <p class="pipeline-card-desc">Tier 1: SMS + Voice + Push • Tier 2: Team push notifications • Tier 3: Silent audit logging. Browser notifications, sound alerts, toast popups, and real-time map markers for all events.</p>
+                    <div class="pipeline-card-tags">
+                        <span class="pipeline-tag">SMS</span>
+                        <span class="pipeline-tag">Voice</span>
+                        <span class="pipeline-tag">Push</span>
+                        <span class="pipeline-tag">Map Pins</span>
+                        <span class="pipeline-tag">Audit Log</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Quick Stats -->
+        <section class="pipeline-section">
+            <div class="pipeline-section-header">
+                <span class="pipeline-section-icon">💡</span>
+                <h2>Quick Stats</h2>
+                <span class="pipeline-section-badge">Live</span>
+            </div>
+            <p class="pipeline-section-desc">Real-time incident distribution across all severity tiers. Click any card to filter incidents on the main dashboard.</p>
+
+            <div class="stats-grid-large">
+                <div class="stat-card-large critical" onclick="window.location.href='/?tier=1'" title="View Critical Incidents">
+                    <div class="stat-card-large-icon">🔴</div>
+                    <div class="stat-card-large-number" id="stat-critical">0</div>
+                    <div class="stat-card-large-label">Critical — Tier 1</div>
+                    <div class="stat-card-large-sub">Immediate action required</div>
+                    <div class="stat-card-large-bar">
+                        <div class="stat-card-large-fill critical-fill" id="stat-critical-fill" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="stat-card-large medium" onclick="window.location.href='/?tier=2'" title="View Medium Incidents">
+                    <div class="stat-card-large-icon">🟡</div>
+                    <div class="stat-card-large-number" id="stat-medium">0</div>
+                    <div class="stat-card-large-label">Medium — Tier 2</div>
+                    <div class="stat-card-large-sub">Action within 1 hour</div>
+                    <div class="stat-card-large-bar">
+                        <div class="stat-card-large-fill medium-fill" id="stat-medium-fill" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="stat-card-large low" onclick="window.location.href='/?tier=3'" title="View Low Incidents">
+                    <div class="stat-card-large-icon">🟢</div>
+                    <div class="stat-card-large-number" id="stat-low">0</div>
+                    <div class="stat-card-large-label">Low — Tier 3</div>
+                    <div class="stat-card-large-sub">Routine monitoring</div>
+                    <div class="stat-card-large-bar">
+                        <div class="stat-card-large-fill low-fill" id="stat-low-fill" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="stat-card-large info" onclick="window.location.href='/?tier=all'" title="View All Incidents">
+                    <div class="stat-card-large-icon">📊</div>
+                    <div class="stat-card-large-number" id="stat-total">0</div>
+                    <div class="stat-card-large-label">Total Incidents</div>
+                    <div class="stat-card-large-sub">All tiers combined</div>
+                    <div class="stat-card-large-bar">
+                        <div class="stat-card-large-fill total-fill" id="stat-total-fill" style="width:100%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Alert Channels -->
+        <section class="pipeline-section">
+            <div class="pipeline-section-header">
+                <span class="pipeline-section-icon">📡</span>
+                <h2>Alert Channels</h2>
+                <span class="pipeline-section-badge">Multi-Channel</span>
+            </div>
+            <p class="pipeline-section-desc">Incidents are routed through different notification channels based on their severity tier.</p>
+
+            <div class="channels-grid">
+                <div class="channel-card tier-1-card">
+                    <div class="channel-card-icon">📞</div>
+                    <div class="channel-card-tier">Tier 1</div>
+                    <div class="channel-card-name">Voice + SMS Broadcast</div>
+                    <div class="channel-card-desc">Instant phone calls and text messages to on-call engineers. Critical alerts bypass quiet hours.</div>
+                    <div class="channel-card-footer">
+                        <span class="channel-card-badge critical-badge">Critical Only</span>
+                        <span class="channel-card-time">⚡ Instant</span>
+                    </div>
+                </div>
+                <div class="channel-card tier-2-card">
+                    <div class="channel-card-icon">📱</div>
+                    <div class="channel-card-tier">Tier 2</div>
+                    <div class="channel-card-name">Team Push Notifications</div>
+                    <div class="channel-card-desc">Push notifications to team chat (Slack, Teams) and mobile devices. Includes browser desktop alerts.</div>
+                    <div class="channel-card-footer">
+                        <span class="channel-card-badge medium-badge">Medium</span>
+                        <span class="channel-card-time">⏱ Within 5m</span>
+                    </div>
+                </div>
+                <div class="channel-card tier-3-card">
+                    <div class="channel-card-icon">📝</div>
+                    <div class="channel-card-tier">Tier 3</div>
+                    <div class="channel-card-name">Silent Audit Logging</div>
+                    <div class="channel-card-desc">Low-priority alerts are logged silently for auditing and weekly review. No immediate interruption to team workflow.</div>
+                    <div class="channel-card-footer">
+                        <span class="channel-card-badge low-badge">Low</span>
+                        <span class="channel-card-time">📋 Audit Trail</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Ingestion Sources -->
+        <section class="pipeline-section">
+            <div class="pipeline-section-header">
+                <span class="pipeline-section-icon">📥</span>
+                <h2>Ingestion Sources</h2>
+                <span class="pipeline-section-badge">3 Sources</span>
+            </div>
+            <p class="pipeline-section-desc">InciCare monitors multiple input streams simultaneously.</p>
+
+            <div class="sources-grid">
+                <div class="source-card">
+                    <div class="source-card-icon">📧</div>
+                    <div class="source-card-info">
+                        <div class="source-card-name">IMAP Email Monitor</div>
+                        <div class="source-card-desc">Connects to Gmail via IMAP with IDLE support for sub-second email detection. Monitors UNSEEN inbox.</div>
+                    </div>
+                    <div class="source-card-status">
+                        <span class="source-status-dot"></span>
+                        <span class="source-status-text">Active</span>
+                    </div>
+                </div>
+                <div class="source-card">
+                    <div class="source-card-icon">🔗</div>
+                    <div class="source-card-info">
+                        <div class="source-card-name">Webhook Listener</div>
+                        <div class="source-card-desc">Accepts JSON payloads from monitoring tools (Datadog, PagerDuty, Grafana) via HTTP POST endpoints.</div>
+                    </div>
+                    <div class="source-card-status">
+                        <span class="source-status-dot"></span>
+                        <span class="source-status-text">Active</span>
+                    </div>
+                </div>
+                <div class="source-card">
+                    <div class="source-card-icon">📊</div>
+                    <div class="source-card-info">
+                        <div class="source-card-name">Syslog Stream</div>
+                        <div class="source-card-desc">Ingests system logs from network devices, servers, and infrastructure via standard syslog protocol (UDP/TCP 514).</div>
+                    </div>
+                    <div class="source-card-status">
+                        <span class="source-status-dot"></span>
+                        <span class="source-status-text">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="processed-today-card">
+                <div class="processed-today-icon">📈</div>
+                <div class="processed-today-info">
+                    <div class="processed-today-label">Processed Today</div>
+                    <div class="processed-today-count" id="processed-count-display">47</div>
+                </div>
+                <div class="processed-today-trend">
+                    <span>↑ 12%</span> vs yesterday
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="pipeline-footer">
+        <p>🛡️ InciCare — Intelligent Incident &amp; Alert Management</p>
+        <p style="color:var(--text-muted);">🔒 Secure • ⚡ Real-time • 🤖 AI-powered • 🗺️ Location-aware</p>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script src="pipeline.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => initNav(''));
+    </script>
+</body>
+
+</html>

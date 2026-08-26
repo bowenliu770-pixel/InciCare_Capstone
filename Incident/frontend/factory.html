@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Smart Factory Topology</title>
+    <meta name="description" content="Smart Factory Incident Management — Machine Topology View">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="factory.css">
+</head>
+
+<body>
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>🏭 Smart Factory Topology</h1>
+                <span class="subtitle">Real-time Machine Monitoring & Incident Tracking</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-metrics">
+                <span id="machine-count" class="incident-count-text">0</span>
+                <span class="metric-label">machines</span>
+            </div>
+            <div class="live-metrics" style="margin-left:16px;">
+                <span id="factory-incident-count" class="incident-count-text" style="color:#f87171;">0</span>
+                <span class="metric-label">active incidents</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+            <div class="status-indicator" style="margin-left:16px;">
+                <span id="factory-connection-status">● Connected</span>
+            </div>
+        </div>
+        <div class="status-bar-right">
+            <span class="clock" id="live-clock">--:--:--</span>
+            <span id="status-tier-breakdown" style="margin-left:12px;font-size:12px;color:var(--text-secondary);"></span>
+        </div>
+    </div>
+
+    <!-- Main Content: SVG connections + Machine nodes -->
+    <div class="factory-container" id="factory-container">
+        <!-- SVG overlay for animated connection lines (behind machines) -->
+        <svg class="factory-svg" id="factory-svg"></svg>
+
+        <!-- Machine nodes (DOM, positioned on top of SVG) -->
+        <div class="factory-machines" id="factory-machines"></div>
+
+        <!-- Machine click popup -->
+        <div id="machine-popup" class="factory-popup">
+            <div class="factory-popup-header">
+                <div class="factory-popup-title" id="popup-machine-name"></div>
+                <button class="factory-popup-close" onclick="hidePopup()" title="Close">✕</button>
+            </div>
+            <div class="factory-popup-body" id="popup-incident-list">
+                <div class="factory-popup-empty">No incidents found for this machine.</div>
+            </div>
+        </div>
+
+        <!-- Popup backdrop (click to close) -->
+        <div id="popup-backdrop" class="popup-backdrop" onclick="hidePopup()"></div>
+
+        <!-- Legend -->
+        <div class="factory-legend">
+            <div class="legend-title">Status Legend</div>
+            <div class="legend-item"><span class="legend-dot critical"></span> Critical Incidents</div>
+            <div class="legend-item"><span class="legend-dot medium"></span> Medium Incidents</div>
+            <div class="legend-item"><span class="legend-dot low"></span> Low / No Incidents</div>
+            <div class="legend-item"><span class="legend-dot flow"></span> Data Flow</div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="factory-loading" class="factory-loading">
+        <div class="factory-loading-spinner"></div>
+        <p>Loading factory topology...</p>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="utils.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="nav.js"></script>
+    <script src="factory.js"></script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            initNav('factory');
+            if (typeof startClock === 'function') startClock('live-clock');
+        });
+    </script>
+</body>
+
+</html>

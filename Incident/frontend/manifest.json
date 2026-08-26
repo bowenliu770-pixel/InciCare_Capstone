@@ -1,0 +1,18 @@
+{
+    "name": "InciCare — Incident Management",
+    "short_name": "InciCare",
+    "description": "AI-powered real-time alert monitoring and triage dashboard",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0f1a",
+    "theme_color": "#0a0f1a",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a0f1a' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='56' font-family='sans-serif' font-weight='bold' fill='%2334d399'>TH</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

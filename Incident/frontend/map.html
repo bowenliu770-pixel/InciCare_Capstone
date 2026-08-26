@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <title>InciCare — Map View</title>
+    <meta name="description" content="Real-time geographic map of incidents detected by InciCare.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Marker Cluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="map.css">
+    <link rel="stylesheet" href="nav.css">
+</head>
+
+<body>
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div>
+                <h1>Map View</h1>
+                <span class="subtitle">Real-time Incident Location Tracking</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-metrics">
+                <span id="map-point-count" class="incident-count-text">0</span>
+                <span class="metric-label">map points</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-bar-left">
+            <div class="status-indicator status-ring">
+                <span class="status-dot"></span>
+                <span>System Operational</span>
+            </div>
+        </div>
+        <div class="status-bar-center">
+            <span class="hero-badge">🗺️ Location Tracking</span>
+        </div>
+        <div class="status-bar-right">
+            <div class="live-metrics">
+                <span id="live-time" class="live-time-text">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP LAYOUT -->
+    <div class="map-layout">
+
+        <!-- LEFT: Location Sidebar -->
+        <aside class="map-sidebar">
+            <div class="map-sidebar-header">
+                <div class="map-sidebar-title">
+                    <span>🗺️</span>
+                    <span>Incident Locations</span>
+                </div>
+                <div class="map-sidebar-stats">
+                    <span class="map-stat-chip t1" id="map-count-t1">🔴 0</span>
+                    <span class="map-stat-chip t2" id="map-count-t2">🟡 0</span>
+                    <span class="map-stat-chip t3" id="map-count-t3">🟢 0</span>
+                    <span class="map-stat-chip total" id="map-count-total">📍 0 points</span>
+                </div>
+            </div>
+            <div class="map-sidebar-search">
+                <input type="text"
+                       id="map-search-input"
+                       placeholder="🔍 Search locations or incidents…"
+                       oninput="handleMapSearch(this.value)">
+            </div>
+            <div class="map-sidebar-list" id="map-loc-list">
+                <!-- Populated by map.js -->
+            </div>
+        </aside>
+
+        <!-- RIGHT: Leaflet Map -->
+        <div class="map-wrapper">
+            <!-- Loading spinner -->
+            <div class="map-loading" id="map-loading">
+                <div class="map-spinner"></div>
+                <span>Loading location data…</span>
+            </div>
+
+            <!-- Empty state overlay -->
+            <div class="map-empty-overlay" id="map-empty" style="display:none;">
+                <div class="empty-icon">🌍</div>
+                <h3>No Location Data Yet</h3>
+                <p>
+                    Locations are extracted automatically from incoming emails using AI.<br><br>
+                    When an email mentions a real place (city, data center, region…),
+                    it will appear here as a map marker in real time.
+                </p>
+            </div>
+
+            <!-- The map -->
+            <div id="incident-map"></div>
+
+            <!-- Top-right controls -->
+            <div class="map-controls">
+                <div class="map-realtime-badge">
+                    <div class="realtime-dot"></div>
+                    Live Tracking
+                </div>
+                <div class="map-legend">
+                    <div class="map-legend-title">Severity Tier</div>
+                    <div class="map-legend-item">
+                        <span class="legend-dot t1"></span>
+                        <span>🔴 Critical — Tier 1</span>
+                    </div>
+                    <div class="map-legend-item">
+                        <span class="legend-dot t2"></span>
+                        <span>🟡 Medium — Tier 2</span>
+                    </div>
+                    <div class="map-legend-item">
+                        <span class="legend-dot t3"></span>
+                        <span>🟢 Low — Tier 3</span>
+                    </div>
+                </div>
+                <button class="map-heatmap-btn" id="heatmap-toggle-btn" onclick="toggleHeatmap()" title="Toggle heatmap view">
+                    🌡️ Heatmap
+                </button>
+            </div>
+
+            <!-- Filter toolbar -->
+            <div class="map-filter-bar" id="map-filter-bar">
+                <div class="filter-group">
+                    <button class="map-filter-btn active" data-tier="all">All Tiers</button>
+                    <button class="map-filter-btn" data-tier="1">🔴 Critical</button>
+                    <button class="map-filter-btn" data-tier="2">🟡 Medium</button>
+                    <button class="map-filter-btn" data-tier="3">🟢 Low</button>
+                </div>
+                <span class="filter-divider"></span>
+                <div class="filter-group">
+                    <button class="map-filter-btn active" data-time="all">All Time</button>
+                    <button class="map-filter-btn" data-time="24h">24h</button>
+                    <button class="map-filter-btn" data-time="7d">7 Days</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Clock update
+        startClock('live-time');
+    </script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Marker Cluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <!-- Heatmap JS -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Nav + Map logic -->
+    <script src="nav.js"></script>
+    <script src="map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => initNav('map'));
+    </script>
+</body>
+
+</html>

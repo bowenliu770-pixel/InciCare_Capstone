@@ -545,7 +545,7 @@ InciCare focuses on automatically processing operational incidents, classifying 
 If Python, Git, and Ollama are already installed:
 
 ```powershell
-git clone <YOUR-GITHUB-REPOSITORY-URL>
+git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
 
 cd InciCare
 

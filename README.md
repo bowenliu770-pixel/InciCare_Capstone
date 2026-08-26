@@ -143,7 +143,7 @@ Open **PowerShell** or **Command Prompt**.
 Clone the GitHub repository:
 
 ```powershell
-git clone <YOUR-GITHUB-REPOSITORY-URL>
+git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
 ```
 
 Then enter the project folder:

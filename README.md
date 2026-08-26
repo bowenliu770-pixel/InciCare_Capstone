@@ -1,38 +1,3 @@
-对，那 README 里面的 **Project Structure** 和运行步骤需要按照你们真实的文件结构来写。
-
-你们的结构是：
-
-```text
-InciCare/
-│
-├── backend/
-│   ├── app.py
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── *.html
-│   ├── *.js
-│   └── *.css
-│
-├── data/
-│   └── ...
-│
-└── README.md
-```
-
-所以最重要的是：**`requirements.txt` 不在根目录，而是在 `backend` 里面；`app.py` 也在 `backend` 里面。**
-
-因此之前的：
-
-```powershell
-python -m pip install -r requirements.txt
-python app.py
-```
-
-应该改成进入 `backend` 后再运行。
-
-你可以直接把 README 中相关部分改成下面这样。实际上，我建议你直接用这一版作为最终 README：
-
 ````markdown
 # InciCare Capstone
 

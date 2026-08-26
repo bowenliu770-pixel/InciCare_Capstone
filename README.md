@@ -1,31 +1,33 @@
-
 # InciCare Capstone
 
 ## What is InciCare?
-````markdown
+
 InciCare is an intelligent incident management application designed to help users process, classify, and monitor operational incidents.
 
 The application uses AI to analyse incoming incident information, assign an appropriate severity level, calculate the required response time, and display incidents through the monitoring dashboard.
 
 The main purpose of this project is to reduce manual incident classification and make it easier for users to identify and respond to important incidents.
 
-````
+---
+
 ## Features
 
 InciCare provides the following main features:
-````
-- AI-based incident classification
-- Three incident severity levels: Critical, Medium, and Low
-- SLA countdown for incidents
-- Real-time incident updates
-- Incident location detection
-- Critical incident notifications
-- Duplicate incident detection
-````
+
+* AI-based incident classification
+* Three incident severity levels: Critical, Medium, and Low
+* SLA countdown for incidents
+* Real-time incident updates
+* Incident location detection
+* Critical incident notifications
+* Duplicate incident detection
+
+---
+
 # Project Structure
 
 The project is organised into three main folders:
-````
+
 ```text
 InciCare/
 │
@@ -42,7 +44,7 @@ InciCare/
 │   └── ...
 │
 └── README.md
-````
+```
 
 ### Backend
 
@@ -56,6 +58,8 @@ backend/
 
 * `app.py` — main backend application
 * `requirements.txt` — Python dependencies required by the backend
+
+The backend uses Flask, Flask-CORS, Flask-SocketIO, Eventlet, and Requests.
 
 ### Frontend
 
@@ -78,10 +82,14 @@ The `data` folder contains the application's local data.
 
 Before running InciCare on Windows, please install:
 
-* Python 3
+* **Python 3.11.x (recommended)**
 * Git
 * Ollama
 * The Python packages listed in `backend/requirements.txt`
+
+> **Recommended Python version:** Python **3.11.x**.
+
+Python 3.11 is recommended for this project because the backend uses Flask, Flask-SocketIO, Eventlet, Flask-CORS, and Requests.
 
 You do **not** need to install each Python package manually.
 
@@ -91,25 +99,49 @@ You do **not** need to install each Python package manually.
 
 Follow the steps below to download and run InciCare on a Windows computer.
 
-## 1. Install Python
+## 1. Install Python 3.11
 
-Download and install Python from:
+Download **Python 3.11 for Windows** from the official Python website:
 
-[https://www.python.org/downloads/](https://www.python.org/downloads/)
+[Python 3.11 Downloads](https://www.python.org/downloads/release/python-3119/?utm_source=chatgpt.com)
+
+For most Windows computers, download:
+
+```text
+Windows installer (64-bit)
+```
 
 During installation, make sure to enable:
 
 ```text
-Add Python to PATH
+Add python.exe to PATH
 ```
 
-After installation, open **PowerShell** or **Command Prompt** and check:
+Then click:
+
+```text
+Install Now
+```
+
+### Check Python Installation
+
+After installation, open **PowerShell** or **Command Prompt** and run:
 
 ```powershell
 python --version
 ```
 
-You should see a Python 3 version.
+You should see something similar to:
+
+```text
+Python 3.11.x
+```
+
+For example:
+
+```text
+Python 3.11.9
+```
 
 Also check pip:
 
@@ -117,19 +149,53 @@ Also check pip:
 python -m pip --version
 ```
 
+If both commands display a version number, Python has been installed successfully.
+
+### If Python is Not Recognized
+
+If you see:
+
+```text
+'python' is not recognized as an internal or external command
+```
+
+try:
+
+```powershell
+py --version
+```
+
+If `py` works, use:
+
+```powershell
+py -m pip install -r requirements.txt
+```
+
+and:
+
+```powershell
+py app.py
+```
+
+If neither `python` nor `py` works, reinstall Python 3.11 and make sure **Add python.exe to PATH** is selected.
+
+> **Important:** Do not install Python 2. InciCare requires Python 3. Python **3.11.x** is the recommended version.
+
 ---
 
 ## 2. Install Git
 
 Download and install Git for Windows:
 
-[https://git-scm.com/download/win](https://git-scm.com/download/win)
+[Git for Windows](https://git-scm.com/download/win?utm_source=chatgpt.com)
 
 After installation, check:
 
 ```powershell
 git --version
 ```
+
+You should see a Git version number.
 
 ---
 
@@ -169,9 +235,19 @@ Then install all required packages:
 python -m pip install -r requirements.txt
 ```
 
-This automatically installs all Python packages required by the backend.
+This automatically installs the required Python packages for the backend.
 
-After installation, you should remain inside the `backend` folder for the next step.
+The current requirements include:
+
+```text
+flask==3.0.0
+flask-cors==4.0.0
+flask-socketio==5.3.6
+eventlet==0.35.1
+requests==2.31.0
+```
+
+After installation, remain inside the `backend` folder for the next step.
 
 ---
 
@@ -181,7 +257,7 @@ InciCare uses **Ollama** to run the AI model locally.
 
 Download and install Ollama for Windows:
 
-[https://ollama.com/download](https://ollama.com/download)
+[Ollama Download](https://ollama.com/download?utm_source=chatgpt.com)
 
 After installation, open a new PowerShell or Command Prompt window and check:
 
@@ -191,11 +267,19 @@ ollama --version
 
 If a version number is displayed, Ollama has been installed successfully.
 
+InciCare connects to the local Ollama service at:
+
+```text
+http://localhost:11434/api/generate
+```
+
+The application uses Ollama for local AI-based incident classification.
+
 ---
 
 ## 6. Download the AI Model
 
-InciCare uses:
+InciCare's default AI model is:
 
 ```text
 qwen2.5:3b
@@ -219,9 +303,19 @@ You should see:
 qwen2.5:3b
 ```
 
+The application is configured to use `qwen2.5:3b` as its default model.
+
 ### Optional Fallback Model
 
-If the project configuration requires the larger fallback model, also run:
+InciCare can automatically escalate uncertain classifications to a larger model.
+
+The configured fallback model is:
+
+```text
+qwen2.5:7b
+```
+
+If you want to enable the fallback model, run:
 
 ```powershell
 ollama pull qwen2.5:7b
@@ -232,6 +326,15 @@ Then check again:
 ```powershell
 ollama list
 ```
+
+You should see:
+
+```text
+qwen2.5:3b
+qwen2.5:7b
+```
+
+The application is configured to use `qwen2.5:7b` when the smaller model produces a low-confidence result.
 
 ---
 
@@ -247,6 +350,12 @@ Then run:
 
 ```powershell
 python app.py
+```
+
+If you are using the Python launcher instead:
+
+```powershell
+py app.py
 ```
 
 The backend application will start.
@@ -290,7 +399,7 @@ Once the page opens, InciCare is ready to use.
 For a new Windows computer:
 
 ```text
-Install Python
+Install Python 3.11
       ↓
 Install Git
       ↓
@@ -306,6 +415,8 @@ Install Ollama
       ↓
 Download qwen2.5:3b
       ↓
+(Optional) Download qwen2.5:7b
+      ↓
 Run app.py
       ↓
 Open Browser
@@ -313,10 +424,14 @@ Open Browser
 InciCare is Ready
 ```
 
-### Main Commands
+---
+
+# Main Commands
+
+If Python, Git, and Ollama are already installed:
 
 ```powershell
-git clone <YOUR-GITHUB-REPOSITORY-URL>
+git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
 
 cd InciCare
 
@@ -335,11 +450,13 @@ If the larger fallback model is required:
 ollama pull qwen2.5:7b
 ```
 
+Then open the local URL shown in the terminal.
+
 ---
 
 # Troubleshooting
 
-## Python is not recognized
+## Python is Not Recognized
 
 If you see:
 
@@ -365,11 +482,29 @@ and:
 py app.py
 ```
 
-If neither `python` nor `py` works, reinstall Python and make sure **Add Python to PATH** is selected.
+If neither `python` nor `py` works, reinstall **Python 3.11** and make sure **Add python.exe to PATH** is selected during installation.
 
 ---
 
-## `requirements.txt` cannot be found
+## Python Version is Different
+
+Check your version:
+
+```powershell
+python --version
+```
+
+Recommended:
+
+```text
+Python 3.11.x
+```
+
+If you are using a different Python version and encounter package or application errors, install Python 3.11 and use it to run the project.
+
+---
+
+## `requirements.txt` Cannot Be Found
 
 Make sure you are inside the `backend` folder.
 
@@ -400,7 +535,7 @@ python -m pip install -r requirements.txt
 
 ---
 
-## Ollama is not recognized
+## Ollama is Not Recognized
 
 If you see:
 
@@ -412,7 +547,7 @@ make sure Ollama has been installed correctly.
 
 Download Ollama from:
 
-[https://ollama.com/download](https://ollama.com/download)
+[Ollama Download](https://ollama.com/download?utm_source=chatgpt.com)
 
 After installation, restart PowerShell or Command Prompt and run:
 
@@ -442,6 +577,12 @@ Then check again:
 ollama list
 ```
 
+If the fallback model is being used, make sure this is also installed:
+
+```powershell
+ollama pull qwen2.5:7b
+```
+
 ---
 
 ## InciCare Cannot Connect to Ollama
@@ -467,6 +608,8 @@ After that, run the backend again:
 ```powershell
 python app.py
 ```
+
+InciCare's backend sends classification requests to the local Ollama API.
 
 ---
 
@@ -495,9 +638,105 @@ If an error appears in the terminal, check the error message for information abo
 
 ---
 
+## Port Already in Use
+
+If the application cannot start because the port is already being used, check whether another instance of InciCare is already running.
+
+Close the existing InciCare terminal or stop the previous Python process before running:
+
+```powershell
+python app.py
+```
+
+again.
+
+---
+
+# How InciCare Classifies Incidents
+
+InciCare uses a multi-stage classification process.
+
+```text
+Incoming Incident
+        ↓
+Regex Triage
+        ↓
+Is the incident obvious?
+   ↙             ↘
+ YES              NO
+ ↓                 ↓
+Classify       Ollama AI
+Directly       Classification
+                  ↓
+             Confidence Check
+                  ↓
+          Is confidence low?
+             ↙          ↘
+           YES           NO
+            ↓             ↓
+      qwen2.5:7b      Final Result
+            ↓
+       Final Result
+```
+
+## The backend first uses deterministic regex-based triage for obvious incidents. Ambiguous incidents are sent to the local Ollama model for semantic classification. Low-confidence results can then be escalated to the larger fallback model.
+
+# Incident Severity Levels
+
+InciCare uses three incident severity levels:
+
+| Tier   | Severity | SLA        | Description                                                            |
+| ------ | -------- | ---------- | ---------------------------------------------------------------------- |
+| Tier 1 | Critical | 8 minutes  | Major operational impact requiring immediate attention                 |
+| Tier 2 | Medium   | 40 minutes | Degraded service or potential threat requiring investigation           |
+| Tier 3 | Low      | 4 hours    | Routine or informational incident with no immediate operational impact |
+
+The application's classification prompt defines Tier 1 as critical service failures, Tier 2 as degraded services or potential threats, and Tier 3 as routine or informational incidents.
+
+---
+
+# Location Detection
+
+InciCare can detect locations mentioned in incident information.
+
+Examples include:
+
+```text
+Singapore
+London
+Frankfurt
+Punggol
+eu-west-1
+ap-southeast-1
+SIN
+529538
+```
+
+The system includes geographic location detection for cities, countries, cloud regions, airport codes, Singapore postal codes, and other recognised locations.
+
+---
+
+# Real-Time Monitoring
+
+The backend uses Flask-SocketIO to support real-time communication with the frontend.
+
+This allows the monitoring interface to receive incident updates without requiring the user to manually refresh the page.
+
+The application configures SocketIO using threading mode:
+
+```python
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading"
+)
+```
+
+---
+
 # Important Notes
 
-### Keep the Terminal Open
+## Keep the Terminal Open
 
 When running:
 
@@ -509,7 +748,9 @@ do not close the terminal.
 
 The application will stop when the process is terminated.
 
-### Internet Connection
+---
+
+## Internet Connection
 
 An internet connection is required for:
 
@@ -518,15 +759,35 @@ An internet connection is required for:
 * Downloading Ollama
 * Downloading the AI model
 
-### Ollama
+After the AI model has been downloaded, InciCare performs its AI classification locally through Ollama.
+
+---
+
+## Ollama
 
 Ollama is required because InciCare uses a locally running AI model for incident classification.
 
-### Private Credentials
+The default model is:
 
-Do not upload passwords, API keys, tokens, or other private credentials to GitHub.
+```text
+qwen2.5:3b
+```
 
-If external notification services are configured, make sure their credentials are stored securely.
+The fallback model is:
+
+```text
+qwen2.5:7b
+```
+
+---
+
+## Private Credentials
+
+**Do not upload passwords, API keys, tokens, or other private credentials to GitHub.**
+
+If external notification services are configured, make sure their credentials are stored securely using environment variables or another secure configuration method.
+
+Before publishing the project publicly, check `app.py` and remove any credentials that may have been included during development.
 
 ---
 
@@ -542,7 +803,7 @@ InciCare focuses on automatically processing operational incidents, classifying 
 
 ## Running InciCare in One Look
 
-If Python, Git, and Ollama are already installed:
+If Python 3.11, Git, and Ollama are already installed:
 
 ```powershell
 git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
@@ -556,6 +817,12 @@ python -m pip install -r requirements.txt
 ollama pull qwen2.5:3b
 
 python app.py
+```
+
+Optional fallback model:
+
+```powershell
+ollama pull qwen2.5:7b
 ```
 
 Then open the local URL shown in the terminal.

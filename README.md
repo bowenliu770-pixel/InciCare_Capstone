@@ -561,5 +561,3 @@ python app.py
 Then open the local URL shown in the terminal.
 
 **InciCare should now be running on your computer.**
-
-````

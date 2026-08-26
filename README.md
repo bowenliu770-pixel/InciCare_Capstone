@@ -1,20 +1,19 @@
-````markdown
+
 # InciCare Capstone
 
 ## What is InciCare?
-
+````markdown
 InciCare is an intelligent incident management application designed to help users process, classify, and monitor operational incidents.
 
 The application uses AI to analyse incoming incident information, assign an appropriate severity level, calculate the required response time, and display incidents through the monitoring dashboard.
 
 The main purpose of this project is to reduce manual incident classification and make it easier for users to identify and respond to important incidents.
 
----
-
+````
 ## Features
 
 InciCare provides the following main features:
-
+````
 - AI-based incident classification
 - Three incident severity levels: Critical, Medium, and Low
 - SLA countdown for incidents
@@ -22,13 +21,11 @@ InciCare provides the following main features:
 - Incident location detection
 - Critical incident notifications
 - Duplicate incident detection
-
----
-
+````
 # Project Structure
 
 The project is organised into three main folders:
-
+````
 ```text
 InciCare/
 │

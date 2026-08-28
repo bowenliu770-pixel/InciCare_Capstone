@@ -343,7 +343,7 @@ The application is configured to use `qwen2.5:7b` when the smaller model produce
 Make sure you are inside the `backend` folder:
 
 ```powershell
-cd backend
+cd InciCare_Capstone\InciCare\backend
 ```
 
 Then run:

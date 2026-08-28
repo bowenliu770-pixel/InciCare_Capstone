@@ -433,6 +433,8 @@ If Python, Git, and Ollama are already installed:
 ```powershell
 git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
 
+cd InciCare_Capstone
+
 cd InciCare
 
 cd backend

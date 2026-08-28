@@ -212,7 +212,7 @@ git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
 Then enter the project folder:
 
 ```powershell
-cd InciCare
+cd InciCare_Capstone\Incident
 ```
 
 > Replace `InciCare` with the actual repository folder name if it is different.

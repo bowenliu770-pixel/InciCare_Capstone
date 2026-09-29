@@ -21,23 +21,63 @@ const TIER_COLOR = { 1: '#ef4444', 2: '#eab308', 3: '#22c55e' };
 const TIER_EMOJI = { 1: '🔴', 2: '🟡', 3: '🟢' };
 
 // ===== INIT MAP =====
-function initMap() {
+async function initMap() {
     map = L.map('incident-map', {
-        center: [20, 0],
-        zoom: 2,
+        center: [1.3521, 103.8198],
+        zoom: 3,
         zoomControl: true,
         attributionControl: true
     });
 
-    // Dark tile layer — CartoDB Dark Matter
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19
+    map.zoomControl.setPosition('topleft');
+
+    // Default reliable free tile layer (OpenStreetMap - 100% Free, NO API KEY REQUIRED)
+    let tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    let subdomains = 'abc';
+    let apiKey = '';
+
+    try {
+        const res = await fetch('/api/map/config');
+        if (res.ok) {
+            const cfg = await res.json();
+            if (cfg.tile_url) {
+                tileUrl = cfg.tile_url;
+                if (cfg.attribution) attribution = cfg.attribution;
+                if (cfg.api_key) apiKey = cfg.api_key;
+            }
+        }
+    } catch (e) {
+        console.warn('Map config fetch error, using default tiles:', e);
+    }
+
+    if (apiKey) {
+        tileUrl = tileUrl.replace('{apiKey}', apiKey).replace('{key}', apiKey);
+    }
+
+    let activeTileLayer = L.tileLayer(tileUrl, {
+        attribution: attribution,
+        subdomains: subdomains,
+        maxZoom: 19,
+        className: 'incicare-map-tiles'
     }).addTo(map);
 
-    // Zoom control already in the top-left; leave it there
-    map.zoomControl.setPosition('topleft');
+    // Fallback if tile provider errors out (e.g. Carto requires API key)
+    let fallbackTriggered = false;
+    activeTileLayer.on('tileerror', function() {
+        if (!fallbackTriggered && tileUrl !== 'https://tile.openstreetmap.org/{z}/{x}/{y}.png') {
+            fallbackTriggered = true;
+            console.warn('⚠️ Map tile provider error. Automatically falling back to OpenStreetMap free tiles.');
+            try {
+                map.removeLayer(activeTileLayer);
+            } catch (err) {}
+            activeTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+                className: 'incicare-map-tiles'
+            }).addTo(map);
+        }
+    });
 
     // Create marker cluster group with custom styling
     // Graceful fallback if CDN fails to load

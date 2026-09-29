@@ -293,6 +293,125 @@ function togglePassword() {
     }
 }
 
+function closeLoginModal() {
+    const modalEl = document.getElementById("login-modal");
+    if (modalEl) modalEl.classList.remove("active");
+    if (loginModal) loginModal.classList.remove("active");
+}
+
+function fillDemoCredentials() {
+    const emailInput = document.getElementById("mail-email");
+    const appPwdInput = document.getElementById("mail-apppwd");
+    if (emailInput) emailInput.value = "demo@incicare.com";
+    if (appPwdInput) appPwdInput.value = "demo123456";
+    const tipEl = document.getElementById("login-tip");
+    if (tipEl) {
+        tipEl.style.color = "#34d399";
+        tipEl.textContent = "Demo credentials filled! Click 'Start Monitoring' or launch directly.";
+    }
+}
+
+async function loginWithDemo() {
+    const tipEl = document.getElementById("login-tip");
+    const demoBtn = document.querySelector(".demo-direct-btn");
+    
+    if (demoBtn) {
+        demoBtn.disabled = true;
+        demoBtn.innerHTML = "⏳ Initializing Demo Console...";
+        demoBtn.style.opacity = "0.85";
+    }
+    if (tipEl) {
+        tipEl.style.color = "#a5b4fc";
+        tipEl.textContent = "Setting up demo user & loading incidents...";
+    }
+
+    // Set demo values visually
+    const emailInput = document.getElementById("mail-email");
+    const appPwdInput = document.getElementById("mail-apppwd");
+    if (emailInput) emailInput.value = "demo@incicare.com";
+    if (appPwdInput) appPwdInput.value = "demo123456";
+
+    try {
+        const response = await fetch("/api/mail/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: "demo@incicare.com", app_pwd: "demo123456", is_demo: true })
+        });
+        const data = await response.json();
+
+        if (data.code !== 200) {
+            if (tipEl) {
+                tipEl.style.color = "#f87171";
+                tipEl.textContent = data.msg || "Demo access failed";
+            }
+            if (demoBtn) {
+                demoBtn.disabled = false;
+                demoBtn.innerHTML = "🚀 Launch Live Demo Directly";
+                demoBtn.style.opacity = "1";
+            }
+            return;
+        }
+
+        // Login success
+        currentUserId = data.user_id;
+        currentUserEmail = data.email || "demo@incicare.com";
+
+        // Persist to localStorage
+        localStorage.setItem(STORAGE_KEY_USER_ID, currentUserId);
+        localStorage.setItem(STORAGE_KEY_EMAIL, currentUserEmail);
+        localStorage.setItem(STORAGE_KEY_APP_PWD, "demo123456");
+
+        // Store server start time for restart detection
+        fetch("/api/ping").then(r => r.json()).then(d => {
+            if (d && d.server_start_time) {
+                localStorage.setItem(STORAGE_KEY_SERVER_START, d.server_start_time);
+            }
+        }).catch(() => {});
+
+        // Rebuild sidebar — switches from "Sign In" to demo user profile
+        if (typeof initNav === 'function') {
+            initNav('overview');
+        }
+
+        // Hide modal
+        closeLoginModal();
+
+        // Prime audio & request notification permission
+        initAudio();
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        requestNotificationPermission();
+
+        if (socket && socket.connected) {
+            socket.emit("bind_user", currentUserId);
+        }
+
+        // Load incidents
+        await loadUserIncidents();
+
+        // Start inactivity tracking
+        startInactivityTracking();
+
+        if (demoBtn) {
+            demoBtn.disabled = false;
+            demoBtn.innerHTML = "🚀 Launch Live Demo Directly";
+            demoBtn.style.opacity = "1";
+        }
+    } catch (error) {
+        console.error("Demo login error:", error);
+        if (tipEl) {
+            tipEl.style.color = "#f87171";
+            tipEl.textContent = "Failed to connect to backend server. Ensure backend/app.py is running.";
+        }
+        if (demoBtn) {
+            demoBtn.disabled = false;
+            demoBtn.innerHTML = "🚀 Launch Live Demo Directly";
+            demoBtn.style.opacity = "1";
+        }
+    }
+}
+
 async function submitMailLogin() {
     const emailInput = document.getElementById("mail-email").value.trim();
     const appPwdInput = document.getElementById("mail-apppwd").value.trim();
@@ -662,6 +781,136 @@ async function syncMailbox() {
         }
     }
 }
+
+// ===================== Simulation & Demo Alert Trigger =====================
+const SIM_PRESETS = {
+    1: {
+        title: "Primary DB Cluster Failover Timeout",
+        body: "CRITICAL: Primary database instance in Singapore Jurong Data Center has stopped responding to heartbeat pings. Automatic failover to standby replica timed out. API error rates spiking above 35%. Immediate engineering response required."
+    },
+    2: {
+        title: "High API Latency & Memory Degradation",
+        body: "WARNING: Ingress gateway worker at Woodlands Logistics Hub reporting memory saturation > 88% and p99 response latency increased to 3,400ms. Microservice dependencies queuing."
+    },
+    3: {
+        title: "SSL Certificate Automated Renewal Notice",
+        body: "INFO: Edge routing SSL certificate for regional gateway at Changi Node was successfully rotated by automated ACME provider. No downtime observed."
+    }
+};
+
+function openSimulateModal() {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    requestNotificationPermission();
+
+    const modal = document.getElementById("simulate-modal");
+    if (modal) {
+        modal.classList.add("active");
+        if (!document.getElementById("sim-title").value) {
+            applySimPreset(1);
+        }
+    }
+}
+
+function closeSimulateModal(e) {
+    if (e && e.target && e.target.id !== "simulate-modal") return;
+    const modal = document.getElementById("simulate-modal");
+    if (modal) modal.classList.remove("active");
+    const statusEl = document.getElementById("sim-status");
+    if (statusEl) statusEl.textContent = "";
+}
+
+function applySimPreset(tier) {
+    const preset = SIM_PRESETS[tier];
+    if (!preset) return;
+    const titleInput = document.getElementById("sim-title");
+    const bodyInput = document.getElementById("sim-body");
+    if (titleInput) titleInput.value = preset.title;
+    if (bodyInput) bodyInput.value = preset.body;
+}
+
+async function submitSimulateIncident() {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    requestNotificationPermission();
+
+    const titleInput = document.getElementById("sim-title");
+    const bodyInput = document.getElementById("sim-body");
+    const statusEl = document.getElementById("sim-status");
+    const submitBtn = document.getElementById("sim-submit-btn");
+
+    const title = titleInput ? titleInput.value.trim() : "";
+    const body = bodyInput ? bodyInput.value.trim() : "";
+
+    if (!title) {
+        if (statusEl) {
+            statusEl.style.color = "#f87171";
+            statusEl.textContent = "Please enter an incident title.";
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "⏳ Processing Alert...";
+        submitBtn.style.opacity = "0.7";
+    }
+    if (statusEl) {
+        statusEl.style.color = "#c7d2fe";
+        statusEl.textContent = "Running AI classification & geocoding...";
+    }
+
+    try {
+        const uid = currentUserId || localStorage.getItem(STORAGE_KEY_USER_ID);
+        const res = await fetch("/api/simulate/incident", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user_id: uid,
+                title: title,
+                body: body || title,
+                source: "simulation"
+            })
+        });
+        const data = await res.json();
+        if (data.code === 200) {
+            if (statusEl) {
+                statusEl.style.color = "#34d399";
+                statusEl.textContent = `✅ Alert ${data.incident.id} injected! Broadcasting live...`;
+            }
+            setTimeout(() => {
+                closeSimulateModal();
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = "<span>🚀 Inject &amp; Trigger Alert</span>";
+                    submitBtn.style.opacity = "1";
+                }
+            }, 600);
+        } else {
+            if (statusEl) {
+                statusEl.style.color = "#f87171";
+                statusEl.textContent = data.msg || "Simulation failed";
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = "<span>🚀 Inject &amp; Trigger Alert</span>";
+                submitBtn.style.opacity = "1";
+            }
+        }
+    } catch (err) {
+        console.error("Simulation error:", err);
+        if (statusEl) {
+            statusEl.style.color = "#f87171";
+            statusEl.textContent = "Failed to communicate with backend server.";
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "<span>🚀 Inject &amp; Trigger Alert</span>";
+            submitBtn.style.opacity = "1";
+        }
+    }
+}
+
 
 // Render all incident cards
 function renderIncidents() {

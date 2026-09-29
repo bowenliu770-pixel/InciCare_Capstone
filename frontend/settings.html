@@ -269,32 +269,6 @@
                     <input class="settings-input" type="text" id="setting-ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434">
                 </div>
             </div>
-            <div class="settings-row">
-                <div class="settings-row-info">
-                    <div class="settings-row-label">Escalation Fallback Model <span class="settings-badge">new</span></div>
-                    <div class="settings-row-desc">When the primary model is uncertain (confidence below threshold), automatically re-classify with this larger model for better accuracy. Requires <code>ollama pull</code> first.</div>
-                </div>
-                <div class="settings-control">
-                    <select class="settings-select" id="setting-fallback-model">
-                        <option value="qwen2.5:7b" selected>qwen2.5:7b (recommended)</option>
-                        <option value="llama3.1:8b">llama3.1:8b</option>
-                        <option value="gemma2:9b">gemma2:9b</option>
-                        <option value="mistral:7b">mistral:7b</option>
-                        <option value="">None (disable escalation)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="settings-row">
-                <div class="settings-row-info">
-                    <div class="settings-row-label">Escalation Threshold <span class="settings-badge">default: 75%</span></div>
-                    <div class="settings-row-desc">Confidence below this value triggers re-classification with the fallback model. Higher = more accurate but slower. Set to 0 to always use fallback.</div>
-                </div>
-                <div class="settings-control">
-                    <input class="settings-input" type="range" id="setting-escalation-threshold" min="0" max="95" value="75" step="5"
-                        style="width:140px; accent-color:#34d399;" oninput="document.getElementById('escalation-threshold-val').textContent=this.value+'%'">
-                    <span id="escalation-threshold-val" style="font-size:13px;font-weight:700;color:#34d399;margin-left:8px;">75%</span>
-                </div>
-            </div>
         </div>
 
         <!-- SLA Timers -->
@@ -440,11 +414,6 @@
             fetch('/api/settings').then(r => r.json()).then(d => {
                 if (d.model)      document.getElementById('setting-model').value = d.model;
                 if (d.ollama_url) document.getElementById('setting-ollama-url').value = d.ollama_url;
-                if (d.fallback_model) document.getElementById('setting-fallback-model').value = d.fallback_model;
-                if (d.escalation_threshold !== undefined) {
-                    document.getElementById('setting-escalation-threshold').value = d.escalation_threshold;
-                    document.getElementById('escalation-threshold-val').textContent = d.escalation_threshold + '%';
-                }
             }).catch(() => {});
             const s = JSON.parse(localStorage.getItem('comhub_settings') || '{}');
             // localStorage fallback if backend unreachable
@@ -466,8 +435,6 @@
             const settings = {
                 model:     document.getElementById('setting-model').value,
                 ollamaUrl: document.getElementById('setting-ollama-url').value,
-                fallbackModel: document.getElementById('setting-fallback-model').value,
-                escalationThreshold: parseInt(document.getElementById('setting-escalation-threshold').value),
                 sla1:      parseInt(document.getElementById('setting-sla1').value),
                 sla2:      parseInt(document.getElementById('setting-sla2').value),
                 sla3:      parseInt(document.getElementById('setting-sla3').value),
@@ -478,15 +445,13 @@
                 inactivity: parseInt(document.getElementById('setting-inactivity').value),
             };
             localStorage.setItem('comhub_settings', JSON.stringify(settings));
-            // Also push model + URL + escalation to backend so it takes effect immediately
+            // Also push model + URL to backend so it takes effect immediately
             fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: settings.model,
-                    ollama_url: settings.ollamaUrl,
-                    fallback_model: settings.fallbackModel,
-                    escalation_threshold: settings.escalationThreshold
+                    ollama_url: settings.ollamaUrl
                 })
             }).catch(() => {});
             const toast = document.getElementById('settings-toast');

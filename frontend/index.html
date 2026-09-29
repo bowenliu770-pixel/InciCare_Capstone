@@ -24,12 +24,35 @@
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal-overlay">
-        <form class="modal-content login-modal-content" style="max-width:420px;" onsubmit="event.preventDefault(); submitMailLogin();">
-            <div style="text-align:center; margin-bottom:24px;">
-                <div style="font-size:48px; margin-bottom:8px;">🛡️</div>
-                <h2 style="font-size:24px; font-weight:800; background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Welcome Back</h2>
-                <p style="color:#c0c8d4; font-size:14px; margin-top:4px;">Sign in to monitor your incidents</p>
+        <form class="modal-content login-modal-content" style="max-width:440px; position:relative;" onsubmit="event.preventDefault(); submitMailLogin();">
+            <button type="button" onclick="closeLoginModal()" style="position:absolute; top:16px; right:18px; background:none; border:none; color:#8899aa; font-size:20px; cursor:pointer; line-height:1; padding:4px;" title="Dismiss modal">✕</button>
+
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:44px; margin-bottom:8px;">🛡️</div>
+                <h2 style="font-size:24px; font-weight:800; background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Welcome to InciCare</h2>
+                <p style="color:#c0c8d4; font-size:13px; margin-top:4px;">Real-time AI Incident Response Console</p>
             </div>
+
+            <!-- Instant Demo Quick Entry -->
+            <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; text-align: center;">
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:13px; color:#c7d2fe; margin-bottom:4px;">
+                    <span>⚡ Quick Demo Entry</span>
+                    <span style="background:rgba(99,102,241,0.35); color:#a5b4fc; font-size:10px; padding:2px 7px; border-radius:6px; font-weight:700;">NO 2FA REQUIRED</span>
+                </div>
+                <p style="font-size:12px; color:#94a3b8; margin:0 0 12px 0;">Bypass Google 2-Step Verification and enter the live dashboard with pre-loaded demo incident data.</p>
+                <button type="button" class="demo-direct-btn" onclick="loginWithDemo()"
+                    style="width:100%; padding:11px 16px; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 14px rgba(99,102,241,0.35); transition:all 0.2s;">
+                    <span>🚀 Launch Live Demo Directly</span>
+                </button>
+            </div>
+
+            <!-- Divider -->
+            <div style="display:flex; align-items:center; margin-bottom:18px; color:#64748b; font-size:11px; font-weight:700; letter-spacing:0.8px;">
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+                <span style="padding:0 12px;">OR SIGN IN WITH GMAIL</span>
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+            </div>
+
             <div style="margin-bottom:12px;">
                 <label style="font-size:13px; font-weight:600; color:#e6edf3;">📧 Email Address</label>
                 <input id="mail-email" type="email" class="glow-input"
@@ -46,17 +69,81 @@
                         style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#8899aa;font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;"
                         onclick="togglePassword()" tabindex="-1" title="Show password">👁️</button>
                 </div>
-                <p style="font-size:11px;color:#c0c8d4;margin-top:6px;">Requires Google 2-Step Verification</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                    <p style="font-size:11px;color:#c0c8d4;margin:0;">Requires Google 2-Step Verification</p>
+                    <button type="button" onclick="fillDemoCredentials()" style="background:none; border:none; color:#34d399; font-size:11px; font-weight:600; cursor:pointer; text-decoration:underline; padding:0;">
+                        Auto-fill Demo
+                    </button>
+                </div>
             </div>
             <div id="login-tip" style="color:#f87171;margin-bottom:12px;font-size:13px;min-height:18px;"></div>
             <button type="submit" class="login-btn" id="login-submit-btn"
                 style="width:100%;padding:12px;background:linear-gradient(135deg, #34d399, #10b981);color:#0a0f1a;border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;">
-                🚀 Start Monitoring
+                Start Monitoring
             </button>
             <p style="text-align:center; margin-top:16px; font-size:12px; color:#c0c8d4;">
                 🔒 Secure • ⚡ Real-time • 🤖 AI-powered
             </p>
         </form>
+    </div>
+
+    <!-- Simulate Incident Modal -->
+    <div id="simulate-modal" class="modal-overlay" onclick="closeSimulateModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:540px; border-top:4px solid #8b5cf6;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="font-size:26px;">⚡</div>
+                    <div>
+                        <h3 style="margin:0; font-size:18px; font-weight:800; background: linear-gradient(135deg, #a78bfa, #c4b5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Simulate Live Incident</h3>
+                        <p style="margin:2px 0 0 0; font-size:12px; color:var(--text-muted);">Inject test alert &amp; observe real-time AI classification, sound chimes, and SLA timers</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSimulateModal()" style="background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer; padding:4px; line-height:1;" title="Close">✕</button>
+            </div>
+
+            <!-- Quick Presets -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px;">1-Click Simulation Presets</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:6px;">
+                    <button type="button" class="sim-preset-card" onclick="applySimPreset(1)" style="padding:10px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.35); border-radius:8px; text-align:left; cursor:pointer; transition:all 0.2s;">
+                        <div style="font-size:18px; margin-bottom:4px;">🔴</div>
+                        <div style="font-weight:700; font-size:12px; color:#f87171;">Tier 1 Critical</div>
+                        <div style="font-size:10px; color:#fca5a5; margin-top:2px;">DB Outage (Jurong)</div>
+                    </button>
+                    <button type="button" class="sim-preset-card" onclick="applySimPreset(2)" style="padding:10px; background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.35); border-radius:8px; text-align:left; cursor:pointer; transition:all 0.2s;">
+                        <div style="font-size:18px; margin-bottom:4px;">🟡</div>
+                        <div style="font-weight:700; font-size:12px; color:#fbbf24;">Tier 2 Medium</div>
+                        <div style="font-size:10px; color:#fde047; margin-top:2px;">High Latency (Woodlands)</div>
+                    </button>
+                    <button type="button" class="sim-preset-card" onclick="applySimPreset(3)" style="padding:10px; background:rgba(52, 211, 153, 0.1); border:1px solid rgba(52, 211, 153, 0.35); border-radius:8px; text-align:left; cursor:pointer; transition:all 0.2s;">
+                        <div style="font-size:18px; margin-bottom:4px;">🟢</div>
+                        <div style="font-weight:700; font-size:12px; color:#34d399;">Tier 3 Low</div>
+                        <div style="font-size:10px; color:#86efac; margin-top:2px;">Certificate (Changi)</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Incident Form -->
+            <div style="margin-bottom:12px;">
+                <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Incident Title</label>
+                <input id="sim-title" type="text" class="glow-input" style="width:100%; padding:10px; margin-top:5px; background:#1a2332; border:1px solid var(--border); border-radius:8px; color:#fff; font-size:13px;" placeholder="e.g. Primary DB Cluster Failover Timeout">
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Alert Description / Log Message</label>
+                <textarea id="sim-body" rows="4" class="glow-input" style="width:100%; padding:10px; margin-top:5px; background:#1a2332; border:1px solid var(--border); border-radius:8px; color:#fff; font-size:12px; font-family:monospace; resize:vertical;" placeholder="Enter incident details or syslog string..."></textarea>
+                <span style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;">💡 Tip: Include location names (e.g. Singapore, Jurong, Changi) to automatically place markers on the Incident Map.</span>
+            </div>
+
+            <div id="sim-status" style="font-size:12px; margin-bottom:14px; min-height:16px;"></div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="closeSimulateModal()" style="padding:9px 16px; background:#1e293b; border:1px solid var(--border); color:#94a3b8; border-radius:8px; font-size:13px; cursor:pointer;">Cancel</button>
+                <button type="button" id="sim-submit-btn" onclick="submitSimulateIncident()" style="padding:9px 20px; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(99,102,241,0.4); display:flex; align-items:center; gap:6px;">
+                    <span>🚀 Inject &amp; Trigger Alert</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification Container -->
@@ -180,6 +267,7 @@
             <div class="incident-list-header">
                 <h2>📋 Incident Feed</h2>
                 <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="simulate-btn" onclick="openSimulateModal()" title="Inject simulated alert &amp; test real-time alerts" id="simulate-btn">⚡ Simulate Alert</button>
                     <button class="sync-btn" onclick="syncMailbox()" title="Scan mailbox for new emails" id="sync-btn">📬 Sync Mailbox</button>
                     <button class="refresh-btn" onclick="loadUserIncidents()">⟳ Refresh</button>
                 </div>

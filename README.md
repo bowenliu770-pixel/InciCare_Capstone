@@ -1,832 +1,345 @@
-# InciCare Capstone
+# InciCare — AI-Powered Incident Response & Monitoring Console
 
-## What is InciCare?
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.0.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--Time-010101?logo=socketdotio&logoColor=white)](https://socket.io/)
+[![Ollama](https://img.shields.io/badge/Ollama-qwen2.5%3A3b-black?logo=ollama&logoColor=white)](https://ollama.com)
+[![Leaflet](https://img.shields.io/badge/Leaflet-1.9.4-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-InciCare is an intelligent incident management application designed to help users process, classify, and monitor operational incidents.
+**InciCare** is an autonomous, real-time Incident Management & Monitoring Console designed for modern IT Operations (ITOps), DevOps, and Site Reliability Engineering (SRE) teams.
 
-The application uses AI to analyse incoming incident information, assign an appropriate severity level, calculate the required response time, and display incidents through the monitoring dashboard.
-
-The main purpose of this project is to reduce manual incident classification and make it easier for users to identify and respond to important incidents.
-
----
-
-## Features
-
-InciCare provides the following main features:
-
-* AI-based incident classification
-* Three incident severity levels: Critical, Medium, and Low
-* SLA countdown for incidents
-* Real-time incident updates
-* Incident location detection
-* Critical incident notifications
-* Duplicate incident detection
+It continuously ingests alert data across multiple input vectors (Gmail IMAP, Datadog Webhooks, Generic JSON Webhooks, and RFC 3164 Syslog UDP), automatically classifies severity and impact using a private, local Large Language Model (`qwen2.5:3b` via Ollama), computes SLA countdown windows, extracts geographic incident locations for interactive mapping, and alerts engineers across web, audio, and Telegram.
 
 ---
 
-# Project Structure
+## Table of Contents
 
-The project is organised into three main folders:
+- [Key Features](#key-features)
+- [How It Works](#how-it-works)
+- [Where & How Qwen AI Is Used](#where--how-qwen-ai-is-used)
+- [Architecture & Tech Stack](#architecture--tech-stack)
+- [Project Directory Structure](#project-directory-structure)
+- [Prerequisites](#prerequisites)
+- [Quick Installation Guide](#quick-installation-guide)
+- [Configuration (.env)](#configuration-env)
+- [Running the Application](#running-the-application)
+- [Fast-Track Demo & Simulation Mode](#fast-track-demo--simulation-mode)
+- [Webhook & Integration Endpoints](#webhook--integration-endpoints)
+- [Severity Tiers & SLA Rules](#severity-tiers--sla-rules)
+- [Troubleshooting & FAQ](#troubleshooting--faq)
+
+---
+
+## Key Features
+
+- **🤖 100% Free & Private Local AI Triage:** Runs entirely on your hardware via Ollama with `qwen2.5:3b`. No external API calls, no third-party data transmission, and zero recurring token costs.
+- **⚡ Real-Time WebSocket Feeds:** Live bidirectional updates via Flask-SocketIO. Incidents appear on the dashboard instantly with audio chimes, glowing card animations, and browser desktop notifications.
+- **⏱️ Second-by-Second SLA Timers:** Enforces dynamic SLA deadlines depending on incident severity, alerting operators before response windows lapse.
+- **🗺️ Interactive Geographic Mapping:** Leaflet-powered global incident map with automatic entity geocoding, clustering, and dark-theme OpenStreetMap tiles (100% free with no API keys required).
+- **🧪 Fast-Track Demo & Simulation:** Single-click demo bypass into the console (no Google 2FA or App Passwords required) plus an interactive **Simulate Alert** modal to test live alert pipelines on demand.
+- **📲 Multi-Channel Alert Ingestion:**
+  - **Email:** Polls Gmail inboxes over secure IMAP SSL with automatic body decoding.
+  - **Webhooks:** Native endpoints for Datadog alerts and custom JSON webhooks.
+  - **Syslog:** Integrated RFC 3164 UDP listener on port 515.
+- **🔔 Telegram Escalation:** Automatically dispatches critical (Tier 1) alerts directly to mobile devices via Telegram Bot API.
+
+---
+
+## How It Works
+
+```
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │ Gmail (IMAP) │     │ Datadog / API│     │  Syslog UDP  │     │ UI Simulator │
+  └──────┬───────┘     └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
+         │                    │                    │                    │
+         └────────────────────┼────────────────────┴────────────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │  Unified Ingestion Bus  │ (backend/app.py)
+                 └────────────┬────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │ Fast Regex Pre-Triage   │ (Deterministic high-confidence filter)
+                 └────────────┬────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │ Ollama (qwen2.5:3b) LLM │ (Semantic CoT classification & NER)
+                 └────────────┬────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │ Location Geocoding      │ (City/Region coordinates mapping)
+                 └────────────┬────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │ Storage & Socket.IO     │
+                 └────────────┬────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │ Live Feed UI │     │ Leaflet Map  │     │ Telegram Bot │
+  │ + Audio Tone │     │ Coordinates  │     │ Push Alert   │
+  └──────────────┘     └──────────────┘     └──────────────┘
+```
+
+1. **Ingest:** An alert arrives via Gmail, Webhook, Syslog UDP, or the Dashboard Simulator.
+2. **Pre-Triage:** Fast deterministic regex filters classify obvious alerts instantly to save compute.
+3. **AI Classification:** Ambiguous alerts are passed to local `qwen2.5:3b`, which analyzes operational impact and outputs structured JSON (Tier, Confidence, Reason, and Locations).
+4. **Geocode:** Named places (e.g., *Singapore*, *Jurong*, *Changi*) are converted to coordinates and cached.
+5. **Broadcast:** The incident is stored locally, broadcast via Socket.IO, and routed to Telegram if Critical.
+
+---
+
+## Where & How Qwen AI Is Used
+
+The `qwen2.5:3b` model is the primary intelligence engine powering InciCare. It is used across several core components:
+
+1. **Semantic Impact Reasoning (`backend/app.py` -> `classify_alert()`):**
+   Unlike simple keyword-matchers that mistake "test alert" for critical events, Qwen evaluates semantic context. It determines whether service impact is *confirmed and ongoing* (Critical) vs *detected / potential* (Medium) vs *routine / informational* (Low).
+2. **Named Entity Recognition for Geography:**
+   Qwen extracts geographic locations, airports (SIN, LHR), cloud regions (`ap-southeast-1`), and data centers mentioned in alert descriptions to place map markers automatically.
+3. **Confidence Scoring & Flagging:**
+   Qwen produces a certainty score (0–100%). When an alert is ambiguous (confidence < 65%), it flags `needs_review: true` so human operators can inspect it.
+4. **Interactive Re-classification:**
+   Operators can trigger on-demand re-classification with custom temperature or manual notes directly from any incident card.
+5. **Startup Memory Warmup (`_ollama_warmup()`):**
+   On application launch, a background thread preloads `qwen2.5:3b` into memory with `keep_alive: -1` so the very first incident classification executes immediately without latency.
+
+---
+
+## Architecture & Tech Stack
+
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Backend** | Python 3.11 / Flask | REST API, WebSocket server, Syslog UDP daemon |
+| **Real-Time** | Flask-SocketIO & Eventlet | Low-latency bidirectional event broadcasting |
+| **AI Model** | Ollama (`qwen2.5:3b`) | Local Small Language Model for semantic triage |
+| **Frontend** | Vanilla HTML5, CSS3, ES6 JS | Fast, responsive, dependency-free client UI |
+| **Mapping** | Leaflet.js & OpenStreetMap | Free geographic visualization & marker clustering |
+| **Icons** | Lucide Icons | Clean, modern vector UI iconography |
+| **Audio** | HTML5 Web Audio API | Synthesized alert chimes with severity-based tones |
+
+---
+
+## Project Directory Structure
 
 ```text
 InciCare/
-│
 ├── backend/
-│   ├── app.py
-│   └── requirements.txt
-│
+│   ├── app.py              # Main Flask & Socket.IO server, AI pipeline, API routes
+│   └── requirements.txt    # Python package dependencies
 ├── frontend/
-│   ├── *.html
-│   ├── *.js
-│   └── *.css
-│
-├── data/
-│   └── ...
-│
-└── README.md
-```
-
-### Backend
-
-The `backend` folder contains the Python backend application.
-
-```text
-backend/
-├── app.py
-└── requirements.txt
-```
-
-* `app.py` — main backend application
-* `requirements.txt` — Python dependencies required by the backend
-
-The backend uses Flask, Flask-CORS, Flask-SocketIO, Eventlet, and Requests.
-
-### Frontend
-
-The `frontend` folder contains the user interface.
-
-```text
-frontend/
-├── HTML files
-├── JavaScript files
-└── CSS files
-```
-
-### Data
-
-The `data` folder contains the application's local data.
-
----
-
-# Requirements
-
-Before running InciCare on Windows, please install:
-
-* **Python 3.11.x (recommended)**
-* Git
-* Ollama
-* The Python packages listed in `backend/requirements.txt`
-
-> **Recommended Python version:** Python **3.11.x**.
-
-Python 3.11 is recommended for this project because the backend uses Flask, Flask-SocketIO, Eventlet, Flask-CORS, and Requests.
-
-You do **not** need to install each Python package manually.
-
----
-
-# Quick Start on Windows
-
-Follow the steps below to download and run InciCare on a Windows computer.
-
-## 1. Install Python 3.11
-
-Download **Python 3.11 for Windows** from the official Python website:
-
-[Python 3.11 Downloads](https://www.python.org/downloads/release/python-3119/?utm_source=chatgpt.com)
-
-For most Windows computers, download:
-
-```text
-Windows installer (64-bit)
-```
-
-During installation, make sure to enable:
-
-```text
-Add python.exe to PATH
-```
-
-Then click:
-
-```text
-Install Now
-```
-
-### Check Python Installation
-
-After installation, open **PowerShell** or **Command Prompt** and run:
-
-```powershell
-python --version
-```
-
-You should see something similar to:
-
-```text
-Python 3.11.x
-```
-
-For example:
-
-```text
-Python 3.11.9
-```
-
-Also check pip:
-
-```powershell
-python -m pip --version
-```
-
-If both commands display a version number, Python has been installed successfully.
-
-### If Python is Not Recognized
-
-If you see:
-
-```text
-'python' is not recognized as an internal or external command
-```
-
-try:
-
-```powershell
-py --version
-```
-
-If `py` works, use:
-
-```powershell
-py -m pip install -r requirements.txt
-```
-
-and:
-
-```powershell
-py app.py
-```
-
-If neither `python` nor `py` works, reinstall Python 3.11 and make sure **Add python.exe to PATH** is selected.
-
-> **Important:** Do not install Python 2. InciCare requires Python 3. Python **3.11.x** is the recommended version.
-
----
-
-## 2. Install Git
-
-Download and install Git for Windows:
-
-[Git for Windows](https://git-scm.com/download/win?utm_source=chatgpt.com)
-
-After installation, check:
-
-```powershell
-git --version
-```
-
-You should see a Git version number.
-
----
-
-## 3. Download the Project
-
-Open **PowerShell** or **Command Prompt**.
-
-Clone the GitHub repository:
-
-```powershell
-git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
-```
-
-Then enter the project folder:
-
-```powershell
-cd InciCare_Capstone\Incident
-```
-
-> Replace `InciCare` with the actual repository folder name if it is different.
-
----
-
-## 4. Install the Required Python Packages
-
-The Python dependencies are located inside the `backend` folder.
-
-Enter the backend folder:
-
-```powershell
-cd backend
-```
-
-Then install all required packages:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-This automatically installs the required Python packages for the backend.
-
-The current requirements include:
-
-```text
-flask==3.0.0
-flask-cors==4.0.0
-flask-socketio==5.3.6
-eventlet==0.35.1
-requests==2.31.0
-```
-
-After installation, remain inside the `backend` folder for the next step.
-
----
-
-## 5. Install Ollama
-
-InciCare uses **Ollama** to run the AI model locally.
-
-Download and install Ollama for Windows:
-
-[Ollama Download](https://ollama.com/download?utm_source=chatgpt.com)
-
-After installation, open a new PowerShell or Command Prompt window and check:
-
-```powershell
-ollama --version
-```
-
-If a version number is displayed, Ollama has been installed successfully.
-
-InciCare connects to the local Ollama service at:
-
-```text
-http://localhost:11434/api/generate
-```
-
-The application uses Ollama for local AI-based incident classification.
-
----
-
-## 6. Download the AI Model
-
-InciCare's default AI model is:
-
-```text
-qwen2.5:3b
-```
-
-Download the model:
-
-```powershell
-ollama pull qwen2.5:3b
-```
-
-After the download is complete, check the installed models:
-
-```powershell
-ollama list
-```
-
-You should see:
-
-```text
-qwen2.5:3b
-```
-
-The application is configured to use `qwen2.5:3b` as its default model.
-
-### Optional Fallback Model
-
-InciCare can automatically escalate uncertain classifications to a larger model.
-
-The configured fallback model is:
-
-```text
-qwen2.5:7b
-```
-
-If you want to enable the fallback model, run:
-
-```powershell
-ollama pull qwen2.5:7b
-```
-
-Then check again:
-
-```powershell
-ollama list
-```
-
-You should see:
-
-```text
-qwen2.5:3b
-qwen2.5:7b
-```
-
-The application is configured to use `qwen2.5:7b` when the smaller model produces a low-confidence result.
-
----
-
-# 7. Run InciCare
-
-Make sure you are inside the `backend` folder:
-
-```powershell
-cd InciCare_Capstone\InciCare\backend
-```
-
-Then run:
-
-```powershell
-python app.py
-```
-
-If you are using the Python launcher instead:
-
-```powershell
-py app.py
-```
-
-The backend application will start.
-
-**Keep this terminal window open while using InciCare.**
-
----
-
-# 8. Open the Application
-
-After running:
-
-```powershell
-python app.py
-```
-
-the terminal will display the local address used by the application.
-
-Open that address in your web browser.
-
-For example:
-
-```text
-http://127.0.0.1:5000
-```
-
-or:
-
-```text
-http://localhost:5000
-```
-
-> Use the exact address displayed in the terminal if the port is different.
-
-Once the page opens, InciCare is ready to use.
-
----
-
-# Quick Installation Summary
-
-For a new Windows computer:
-
-```text
-Install Python 3.11
-      ↓
-Install Git
-      ↓
-Clone GitHub Repository
-      ↓
-Enter InciCare Folder
-      ↓
-Enter backend Folder
-      ↓
-Install requirements.txt
-      ↓
-Install Ollama
-      ↓
-Download qwen2.5:3b
-      ↓
-(Optional) Download qwen2.5:7b
-      ↓
-Run app.py
-      ↓
-Open Browser
-      ↓
-InciCare is Ready
+│   ├── index.html          # Primary incident overview feed and simulation controls
+│   ├── app.js              # Real-time WebSocket handlers, audio alerts, and UI logic
+│   ├── map.html / map.js   # Interactive Leaflet incident geographic tracker
+│   ├── settings.html       # Runtime AI model and notification preferences
+│   ├── dispatch.html       # Operator triage and dispatch station
+│   ├── factory.html        # Interactive simulated topology view
+│   ├── completed.html      # Historical log of resolved / finished incidents
+│   ├── nav.js / nav.css    # Unified collapsible sidebar navigation
+│   └── style.css           # Premium dark-mode glassmorphic design system
+├── data/                   # Persistent local incident JSON data
+├── .env                    # Active local environment configuration (git-ignored)
+├── .env.example            # Documented environment configuration template
+├── .gitignore              # Git ignore rules for .env and cache files
+├── run_backend.bat         # 1-click Windows CMD launcher with custom title
+└── README.md               # Project documentation
 ```
 
 ---
 
-# Main Commands
+## Prerequisites
 
-If Python, Git, and Ollama are already installed:
+Before setting up InciCare, ensure your machine has:
 
-```powershell
-git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
+1. **Python 3.11.x (Recommended):** [Download Python 3.11](https://www.python.org/downloads/)
+2. **Git:** [Download Git](https://git-scm.com/)
+3. **Ollama:** [Download Ollama](https://ollama.com/) (Required for local AI triage)
 
-cd InciCare_Capstone
+---
 
+## Quick Installation Guide
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/bowenliu770-pixel/InciCare_Capstone.git InciCare
 cd InciCare
-
-cd backend
-
-python -m pip install -r requirements.txt
-
-ollama pull qwen2.5:3b
-
-python app.py
 ```
 
-If the larger fallback model is required:
+### Step 2: Set Up Python Virtual Environment
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
 
-```powershell
-ollama pull qwen2.5:7b
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-Then open the local URL shown in the terminal.
+### Step 3: Install Dependencies
+```bash
+pip install -r backend/requirements.txt
+```
+
+### Step 4: Pull and Start the Ollama AI Model
+Ensure Ollama is running, then pull the `qwen2.5:3b` model:
+```bash
+ollama run qwen2.5:3b
+```
+*(Once downloaded, you can close the interactive chat; Ollama keeps the model ready in the background).*
+
+### Step 5: Configure Environment Variables
+Create your local `.env` from the template:
+```bash
+# Windows
+copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
+```
 
 ---
 
-# Troubleshooting
+## Configuration (.env)
 
-## Python is Not Recognized
+Edit `.env` to customize ports, models, or credentials:
 
-If you see:
+```ini
+# ==============================================================================
+# InciCare — Local Environment Configuration
+# ==============================================================================
 
+# --- Server Configuration ---
+PORT=5262
+HOST=0.0.0.0
+
+# --- Telegram Alert Notifications (Optional) ---
+# Automatically sends a push message when a Critical (Tier 1) alert occurs
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
+
+# --- Ollama AI Configuration ---
+OLLAMA_URL=http://localhost:11434/api/generate
+OLLAMA_MODEL=qwen2.5:3b
+
+# --- Incident Map Tile Provider ---
+# 100% Free OpenStreetMap default (No API key needed)
+MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+MAP_ATTRIBUTION=&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
+MAP_API_KEY=
+```
+
+---
+
+## Running the Application
+
+### Option A: Using the Windows Launcher (Easiest)
+Double-click **`run_backend.bat`** in the project root folder. It will configure the terminal title and boot the server.
+
+### Option B: Using the Terminal
+```bash
+# Activate your virtual environment first
+.\venv\Scripts\activate
+
+# Run the server
+python backend/app.py
+```
+
+Once running, access the dashboard in your browser:
+- **Local Access:** [http://localhost:5262](http://localhost:5262)
+- **Local Network Access:** `http://<your-lan-ip>:5262` (e.g. `http://172.20.146.254:5262`)
+
+---
+
+## Fast-Track Demo & Simulation Mode
+
+InciCare includes built-in demo utilities so you can evaluate the platform without configuring external Gmail accounts or 2FA passwords:
+
+### 1. One-Click Demo Entry
+1. Open [http://localhost:5262](http://localhost:5262).
+2. On the welcome dialog, click the purple **"🚀 Launch Live Demo Directly"** button.
+3. This bypasses Gmail authentication, loads realistic pre-seeded incidents, and opens the monitoring console immediately.
+
+### 2. Live Alert Simulation
+1. In the Incident Feed header, click **"⚡ Simulate Alert"**.
+2. Select one of the 1-click presets:
+   - 🔴 **Tier 1 (Critical):** `Primary DB Cluster Failover Timeout` *(Jurong Data Center)*
+   - 🟡 **Tier 2 (Medium):** `High API Latency & Memory Degradation` *(Woodlands Hub)*
+   - 🟢 **Tier 3 (Low):** `SSL Certificate Automated Renewal Notice` *(Changi Node)*
+3. Click **"🚀 Inject & Trigger Alert"**.
+4. Observe the full alert lifecycle:
+   - Audio chime rings through your speakers.
+   - Severity toast notification pops up.
+   - Pulsing card appears dynamically at the top of the feed.
+   - SLA countdown begins ticking down second-by-second.
+   - Incident location pins directly onto the **Map View**.
+
+---
+
+## Webhook & Integration Endpoints
+
+InciCare exposes standard integration endpoints to ingest incidents from external monitoring platforms:
+
+### 1. Generic JSON Webhook
+```http
+POST /api/webhook/generic?user_id=<user_id>
+Content-Type: application/json
+
+{
+  "title": "API Gateway High Error Rate",
+  "body": "5xx error rate exceeded 15% on Singapore Edge Router over a 5-minute rolling window.",
+  "hostname": "prod-sg-gateway-01"
+}
+```
+
+### 2. Datadog Monitor Webhook
+```http
+POST /api/webhook/datadog?user_id=<user_id>
+Content-Type: application/json
+
+{
+  "title": "Monitor Alert: [P1] Payment Service Deadlock",
+  "body": "Deadlock detected in transaction processor in Jurong Data Center.",
+  "hostname": "payment-db-prod"
+}
+```
+
+### 3. Syslog UDP Listener
+Send standard RFC 3164 Syslog messages over UDP to port `515`:
 ```text
-'python' is not recognized as an internal or external command
-```
-
-try:
-
-```powershell
-py --version
-```
-
-If `py` works, use:
-
-```powershell
-py -m pip install -r requirements.txt
-```
-
-and:
-
-```powershell
-py app.py
-```
-
-If neither `python` nor `py` works, reinstall **Python 3.11** and make sure **Add python.exe to PATH** is selected during installation.
-
----
-
-## Python Version is Different
-
-Check your version:
-
-```powershell
-python --version
-```
-
-Recommended:
-
-```text
-Python 3.11.x
-```
-
-If you are using a different Python version and encounter package or application errors, install Python 3.11 and use it to run the project.
-
----
-
-## `requirements.txt` Cannot Be Found
-
-Make sure you are inside the `backend` folder.
-
-Check your current location:
-
-```powershell
-dir
-```
-
-You should see:
-
-```text
-app.py
-requirements.txt
-```
-
-If you are still in the main project folder, run:
-
-```powershell
-cd backend
-```
-
-Then:
-
-```powershell
-python -m pip install -r requirements.txt
+<11>Sep 29 10:00:00 prod-gw-01 kernel: Out of memory: Kill process 1248 (java)
 ```
 
 ---
 
-## Ollama is Not Recognized
+## Severity Tiers & SLA Rules
 
-If you see:
-
-```text
-'ollama' is not recognized
-```
-
-make sure Ollama has been installed correctly.
-
-Download Ollama from:
-
-[Ollama Download](https://ollama.com/download?utm_source=chatgpt.com)
-
-After installation, restart PowerShell or Command Prompt and run:
-
-```powershell
-ollama --version
-```
+| Tier | Severity | SLA Window | Description & Trigger Criteria | Action Taken |
+| :---: | :---: | :---: | :--- | :--- |
+| **Tier 1** | **Critical** | **8 Minutes** | Total service outage, active security breach, confirmed data corruption affecting all users. | Urgent triple chime, red pulse card, Telegram mobile alert. |
+| **Tier 2** | **Medium** | **40 Minutes** | Service degraded, elevated latency, memory pressure, suspicious activity requiring investigation. | Single audio tone, yellow alert card, queue priority. |
+| **Tier 3** | **Low** | **4 Hours** | Routine operational notice, scheduled backup, automated certificate rotation, or resolved notice. | Silent logging, green informational badge. |
 
 ---
 
-## AI Model Cannot Be Found
+## Troubleshooting & FAQ
 
-Check the installed models:
+#### 1. Why is the Incident Map blank?
+InciCare uses OpenStreetMap tiles by default (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`). If your network or firewall restricts tile downloads, verify your internet connection or supply a custom tile provider / API key in `.env`.
 
-```powershell
-ollama list
-```
+#### 2. How do I fix "Failed to connect to backend server"?
+Ensure `python backend/app.py` is actively running in your terminal and that port `5262` is not blocked by another application.
 
-If `qwen2.5:3b` is not listed, run:
+#### 3. What if Ollama is not installed or model is missing?
+If Ollama is not running on `http://localhost:11434`, InciCare gracefully falls back to deterministic regex triage so the dashboard remains functional even without an active GPU. To run full AI triage, install Ollama and run `ollama run qwen2.5:3b`.
 
-```powershell
-ollama pull qwen2.5:3b
-```
-
-Then check again:
-
-```powershell
-ollama list
-```
-
-If the fallback model is being used, make sure this is also installed:
-
-```powershell
-ollama pull qwen2.5:7b
-```
+#### 4. Can I use my real Gmail inbox?
+Yes! Click **"Sign In"** in the sidebar, enter your Gmail address, and paste a 16-character **Google App Password** (generated from your Google Account under *Security → 2-Step Verification → App passwords*).
 
 ---
 
-## InciCare Cannot Connect to Ollama
+## License
 
-Make sure Ollama is installed and available.
-
-Check:
-
-```powershell
-ollama --version
-```
-
-Then:
-
-```powershell
-ollama list
-```
-
-Make sure `qwen2.5:3b` is installed.
-
-After that, run the backend again:
-
-```powershell
-python app.py
-```
-
-InciCare's backend sends classification requests to the local Ollama API.
-
----
-
-## The Application Does Not Start
-
-Make sure you are inside the backend folder:
-
-```powershell
-cd InciCare
-cd backend
-```
-
-Then reinstall the dependencies:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-Then run:
-
-```powershell
-python app.py
-```
-
-If an error appears in the terminal, check the error message for information about the missing package or configuration problem.
-
----
-
-## Port Already in Use
-
-If the application cannot start because the port is already being used, check whether another instance of InciCare is already running.
-
-Close the existing InciCare terminal or stop the previous Python process before running:
-
-```powershell
-python app.py
-```
-
-again.
-
----
-
-# How InciCare Classifies Incidents
-
-InciCare uses a multi-stage classification process.
-
-```text
-Incoming Incident
-        ↓
-Regex Triage
-        ↓
-Is the incident obvious?
-   ↙             ↘
- YES              NO
- ↓                 ↓
-Classify       Ollama AI
-Directly       Classification
-                  ↓
-             Confidence Check
-                  ↓
-          Is confidence low?
-             ↙          ↘
-           YES           NO
-            ↓             ↓
-      qwen2.5:7b      Final Result
-            ↓
-       Final Result
-```
-
-## The backend first uses deterministic regex-based triage for obvious incidents. Ambiguous incidents are sent to the local Ollama model for semantic classification. Low-confidence results can then be escalated to the larger fallback model.
-
-# Incident Severity Levels
-
-InciCare uses three incident severity levels:
-
-| Tier   | Severity | SLA        | Description                                                            |
-| ------ | -------- | ---------- | ---------------------------------------------------------------------- |
-| Tier 1 | Critical | 8 minutes  | Major operational impact requiring immediate attention                 |
-| Tier 2 | Medium   | 40 minutes | Degraded service or potential threat requiring investigation           |
-| Tier 3 | Low      | 4 hours    | Routine or informational incident with no immediate operational impact |
-
-The application's classification prompt defines Tier 1 as critical service failures, Tier 2 as degraded services or potential threats, and Tier 3 as routine or informational incidents.
-
----
-
-# Location Detection
-
-InciCare can detect locations mentioned in incident information.
-
-Examples include:
-
-```text
-Singapore
-London
-Frankfurt
-Punggol
-eu-west-1
-ap-southeast-1
-SIN
-529538
-```
-
-The system includes geographic location detection for cities, countries, cloud regions, airport codes, Singapore postal codes, and other recognised locations.
-
----
-
-# Real-Time Monitoring
-
-The backend uses Flask-SocketIO to support real-time communication with the frontend.
-
-This allows the monitoring interface to receive incident updates without requiring the user to manually refresh the page.
-
-The application configures SocketIO using threading mode:
-
-```python
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode="threading"
-)
-```
-
----
-
-# Important Notes
-
-## Keep the Terminal Open
-
-When running:
-
-```powershell
-python app.py
-```
-
-do not close the terminal.
-
-The application will stop when the process is terminated.
-
----
-
-## Internet Connection
-
-An internet connection is required for:
-
-* Downloading the GitHub repository
-* Installing Python packages
-* Downloading Ollama
-* Downloading the AI model
-
-After the AI model has been downloaded, InciCare performs its AI classification locally through Ollama.
-
----
-
-## Ollama
-
-Ollama is required because InciCare uses a locally running AI model for incident classification.
-
-The default model is:
-
-```text
-qwen2.5:3b
-```
-
-The fallback model is:
-
-```text
-qwen2.5:7b
-```
-
----
-
-## Private Credentials
-
-**Do not upload passwords, API keys, tokens, or other private credentials to GitHub.**
-
-If external notification services are configured, make sure their credentials are stored securely using environment variables or another secure configuration method.
-
-Before publishing the project publicly, check `app.py` and remove any credentials that may have been included during development.
-
----
-
-# InciCare Capstone
-
-**Project:** InciCare Capstone
-
-**System:** Intelligent Incident Management & Multi-Tiered Alerting System
-
-InciCare focuses on automatically processing operational incidents, classifying their severity, monitoring SLA deadlines, and helping users respond to important incidents efficiently.
-
----
-
-## Running InciCare in One Look
-
-If Python 3.11, Git, and Ollama are already installed:
-
-```powershell
-git clone https://github.com/bowenliu770-pixel/InciCare_Capstone
-
-cd InciCare
-
-cd backend
-
-python -m pip install -r requirements.txt
-
-ollama pull qwen2.5:3b
-
-python app.py
-```
-
-Optional fallback model:
-
-```powershell
-ollama pull qwen2.5:7b
-```
-
-Then open the local URL shown in the terminal.
-
-**InciCare should now be running on your computer.**
+This project is licensed under the MIT License — see the LICENSE file for details.

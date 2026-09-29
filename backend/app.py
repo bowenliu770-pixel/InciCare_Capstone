@@ -3,6 +3,31 @@ import sys
 import warnings
 import requests
 
+# Load .env configuration file automatically
+def _load_env_file():
+    env_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.join(os.getcwd(), ".env")
+    ]
+    for p in env_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        key, val = line.split("=", 1)
+                        key = key.strip()
+                        val = val.strip().strip('"').strip("'")
+                        if key and key not in os.environ:
+                            os.environ[key] = val
+                break
+            except Exception as e:
+                print(f"⚠️ Error loading .env from {p}: {e}")
+
+_load_env_file()
 
 
 # ======================================================
@@ -11,8 +36,8 @@ import requests
 # (Tier 1) incident is detected.
 # ======================================================
 
-BOT_TOKEN = "8696134301:AAEjs46Uqote89h4wQShKbN5rbiHxXpuumo"
-CHAT_ID = "6856567076"
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8696134301:AAEjs46Uqote89h4wQShKbN5rbiHxXpuumo")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "6856567076")
 
 
 def send_telegram(message):
@@ -99,11 +124,6 @@ SERVER_START_TIME = time.time()  # used by frontend to detect server restarts
 # ===== LLM CLASSIFICATION — Multi-Strategy (CoT + Regex + Escalation) =====
 # Confidence threshold below which an incident is flagged for human review.
 CONF_REVIEW_THRESHOLD = 65
-
-# Model escalation: when the small model is uncertain (confidence < threshold),
-# automatically re-classify with a larger, more capable model.
-OLLAMA_FALLBACK_MODEL = os.environ.get("OLLAMA_FALLBACK_MODEL", "qwen2.5:7b")
-ESCALATION_THRESHOLD = 75  # confidence below this → escalate to fallback model
 
 # Regex triage: fast deterministic patterns handle the obvious cases.
 # Only ambiguous alerts reach the LLM, saving token budget for hard cases.
@@ -326,14 +346,12 @@ def _regex_triage(title: str, body: str) -> dict | None:
     return None
 
 
-def classify_alert(title: str, body: str, source_type: str = "generic", model: str = None,
-                   escalation_depth: int = 0, prior_result: dict = None) -> dict:
+def classify_alert(title: str, body: str, source_type: str = "generic", model: str = None) -> dict:
     """Classify any alert (email, webhook, syslog) using local Ollama LLM.
 
     Multi-strategy approach:
     1. Regex triage — fast deterministic patterns for obvious cases
     2. Chain-of-Thought LLM — semantic reasoning without signal-word bias
-    3. Model escalation — larger model re-checks low-confidence results
 
     Returns: {
         "tier": int,
@@ -341,7 +359,7 @@ def classify_alert(title: str, body: str, source_type: str = "generic", model: s
         "reason": str,
         "confidence": int,
         "locations": list[str],
-        "classification_flags": list[str]   # e.g. ["low_confidence", "regex_triage", "escalated", "keyword_fallback"]
+        "classification_flags": list[str]   # e.g. ["low_confidence", "regex_triage", "keyword_fallback"]
     }
     """
     # Resolve model for this attempt
@@ -350,26 +368,15 @@ def classify_alert(title: str, body: str, source_type: str = "generic", model: s
 
     # ===== Step 0: Regex triage (skip LLM for obvious cases) =====
     _regex_locations = []
-    if escalation_depth == 0 and prior_result is None:
-        triage = _regex_triage(title, body)
-        if triage is not None:
-            if "tier" in triage:
-                print(f"⚡ Regex triage: {triage['tier_label']} (conf={triage['confidence']}%) — skipping LLM")
-                return triage
-            # Ambiguous triage — preserve regex-extracted locations for merging
-            _regex_locations = triage.get("_regex_locations", [])
+    triage = _regex_triage(title, body)
+    if triage is not None:
+        if "tier" in triage:
+            print(f"⚡ Regex triage: {triage['tier_label']} (conf={triage['confidence']}%) — skipping LLM")
+            return triage
+        # Ambiguous triage — preserve regex-extracted locations for merging
+        _regex_locations = triage.get("_regex_locations", [])
 
     # ===== Step 1: Build Chain-of-Thought prompt (no signal words!) =====
-    # Tier definitions are purely descriptive — the model must reason semantically,
-    # not keyword-match against a provided word list.
-    escalation_context = ""
-    if prior_result is not None:
-        escalation_context = f"""=== CONTEXT FROM PRELIMINARY ANALYSIS ===
-A smaller model was uncertain about this alert (confidence {prior_result.get('confidence', '?')}%).
-It tentatively classified as Tier {prior_result.get('tier', '?')} with reasoning: "{prior_result.get('reason', '')}".
-You are a more capable model. Re-evaluate independently and provide your own classification.
-"""
-
     prompt = f"""You are an expert incident severity classifier for an IT operations center.
 Classify the following {source_type} alert by reasoning about its operational impact.
 Respond with ONLY a single JSON object — no explanation, no markdown, no extra text.
@@ -569,35 +576,6 @@ JSON: {{"tier":<1|2|3>,"tier_label":"<Critical|Medium|Low>","reason":"<one preci
                 if result["confidence"] < CONF_REVIEW_THRESHOLD:
                     flags.append("low_confidence")
                 result["classification_flags"] = flags
-
-                # ===== Model Escalation: low confidence → larger model =====
-                if (escalation_depth == 0 and
-                    result["confidence"] < ESCALATION_THRESHOLD and
-                    model != OLLAMA_FALLBACK_MODEL):
-                    print(f"🔼 Escalating to {OLLAMA_FALLBACK_MODEL} (conf={result['confidence']}% < {ESCALATION_THRESHOLD}%)")
-                    try:
-                        escalated = classify_alert(
-                            title, body, source_type,
-                            model=OLLAMA_FALLBACK_MODEL,
-                            escalation_depth=1,
-                            prior_result=result
-                        )
-                        if escalated and escalated.get("confidence", 0) > 0:
-                            flags = escalated.get("classification_flags", [])
-                            if "escalated" not in flags:
-                                flags.append("escalated")
-                            escalated["classification_flags"] = flags
-                            # Merge regex-extracted locations
-                            if _regex_locations:
-                                esc_locs = set(escalated.get("locations", []))
-                                for loc in _regex_locations:
-                                    if loc.lower() not in (l.lower() for l in esc_locs):
-                                        esc_locs.add(loc)
-                                        escalated.setdefault("locations", []).append(loc)
-                            print(f"✅ Escalated: {escalated['tier_label']} (conf={escalated['confidence']}%) — {escalated.get('reason','')[:60]}")
-                            return escalated
-                    except Exception as e:
-                        print(f"⚠️ Escalation failed ({e}), keeping original classification")
 
                 conf_indicator = "✅" if result["confidence"] >= 80 else ("⚠️" if result["confidence"] >= 65 else "🔴")
                 model_label = model.replace(":","_")
@@ -1301,6 +1279,23 @@ def get_user_data_path(user_id: str) -> str:
 def load_user_data(user_id: str) -> dict:
     file_path = get_user_data_path(user_id)
     if not os.path.exists(file_path):
+        # Auto-seed sample incidents from available dataset so demo user isn't blank
+        seed_candidates = [
+            os.path.join(BASE_DATA_DIR, "user_bae71ee7a18ccf0c_incidents.json"),
+            os.path.join(BASE_DATA_DIR, "user_9533c078ef3ddf7e_incidents.json"),
+            os.path.join(BASE_DATA_DIR, "incidents.json"),
+        ]
+        for candidate in seed_candidates:
+            if os.path.exists(candidate):
+                try:
+                    with open(candidate, "r", encoding="utf-8") as f:
+                        seed_data = json.load(f)
+                    if isinstance(seed_data, dict) and seed_data.get("incidents"):
+                        save_user_data(user_id, seed_data)
+                        print(f"📦 Seeded {len(seed_data['incidents'])} sample incidents for user {user_id}")
+                        return seed_data
+                except Exception as e:
+                    print(f"⚠️ Could not seed sample data from {candidate}: {e}")
         return {"incidents": []}
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -1358,12 +1353,16 @@ def process_alert(user_id, title, body, source_type="generic", extra_metadata=No
         user_data = load_user_data(user_id)
 
         # --- Deduplication: skip if already processed (same title + body hash) ---
-        dedup_hash = hashlib.md5((title + body[:500]).encode()).hexdigest()
-        for existing in user_data.get("incidents", []):
-            existing_hash = existing.get("dedup_hash", "")
-            if existing_hash == dedup_hash:
-                print(f"⏭️ Duplicate alert skipped (matches {existing['id']}): {title[:60]}")
-                return existing  # already processed, don't create duplicate
+        is_sim = bool((extra_metadata or {}).get("simulated"))
+        if is_sim:
+            dedup_hash = hashlib.md5((title + body[:500] + str(time.time())).encode()).hexdigest()
+        else:
+            dedup_hash = hashlib.md5((title + body[:500]).encode()).hexdigest()
+            for existing in user_data.get("incidents", []):
+                existing_hash = existing.get("dedup_hash", "")
+                if existing_hash == dedup_hash:
+                    print(f"⏭️ Duplicate alert skipped (matches {existing['id']}): {title[:60]}")
+                    return existing  # already processed, don't create duplicate
 
         created_at_str = (extra_metadata or {}).get("created_at") or time.strftime("%Y-%m-%d %H:%M:%S")
         sla_window = SLA_CONFIG[classification["tier"]]
@@ -1668,14 +1667,12 @@ def ping():
 @app.route("/api/settings", methods=["GET"])
 def get_settings():
     """Return current LLM settings so the frontend can show the active model."""
-    return jsonify({"code": 200, "model": OLLAMA_MODEL, "ollama_url": OLLAMA_URL,
-                    "fallback_model": OLLAMA_FALLBACK_MODEL,
-                    "escalation_threshold": ESCALATION_THRESHOLD})
+    return jsonify({"code": 200, "model": OLLAMA_MODEL, "ollama_url": OLLAMA_URL})
 
 @app.route("/api/settings", methods=["POST"])
 def set_settings():
     """Update LLM model/URL at runtime — no restart needed."""
-    global OLLAMA_MODEL, OLLAMA_URL, OLLAMA_FALLBACK_MODEL, ESCALATION_THRESHOLD
+    global OLLAMA_MODEL, OLLAMA_URL
     data = request.get_json() or {}
     if "model" in data and data["model"]:
         OLLAMA_MODEL = data["model"]
@@ -1683,35 +1680,34 @@ def set_settings():
     if "ollama_url" in data and data["ollama_url"]:
         OLLAMA_URL = data["ollama_url"]
         print(f"🔗 Ollama URL changed to: {OLLAMA_URL}")
-    if "fallback_model" in data and data["fallback_model"]:
-        OLLAMA_FALLBACK_MODEL = data["fallback_model"]
-        print(f"🔼 Fallback model changed to: {OLLAMA_FALLBACK_MODEL}")
-    if "escalation_threshold" in data and data["escalation_threshold"] is not None:
-        ESCALATION_THRESHOLD = int(data["escalation_threshold"])
-        print(f"📊 Escalation threshold changed to: {ESCALATION_THRESHOLD}%")
-    return jsonify({"code": 200, "model": OLLAMA_MODEL, "ollama_url": OLLAMA_URL,
-                    "fallback_model": OLLAMA_FALLBACK_MODEL,
-                    "escalation_threshold": ESCALATION_THRESHOLD})
+    return jsonify({"code": 200, "model": OLLAMA_MODEL, "ollama_url": OLLAMA_URL})
 
 @app.route("/api/mail/login", methods=["POST"])
 def mail_login():
     request_data = request.get_json() or {}
     mail_account = request_data.get("email", "").strip()
     app_password = request_data.get("app_pwd", "").strip().replace(" ", "")
-    if not mail_account or not app_password:
-        return jsonify({"code": 400, "msg": "Email and app specific password cannot be empty"}), 400
+    is_demo = request_data.get("is_demo", False)
 
-    # Demo account bypass (for testing without real Gmail credentials)
-    if mail_account.lower() in ["demo@comhub.com", "admin@comhub.com"] or app_password == "demo123456":
+    # Demo account bypass (for testing without real Gmail credentials / 2FA)
+    if is_demo or mail_account.lower() in ["demo@comhub.com", "admin@comhub.com", "demo@incicare.com", "demo@example.com", "demo"] or app_password in ["demo123456", "demo"]:
+        if not mail_account or mail_account.lower() == "demo":
+            mail_account = "demo@incicare.com"
         user_id = hashlib.sha256(mail_account.encode()).hexdigest()[:16]
+        # Pre-seed user data if needed
+        load_user_data(user_id)
         online_users[user_id] = {
             "email": mail_account,
-            "app_pwd": app_password,
+            "app_pwd": app_password or "demo123456",
             "stop_flag": True,
             "thread": None,
             "last_activity": time.time()
         }
-        return jsonify({"code": 200, "user_id": user_id, "msg": "Demo login successful"})
+        print(f"⚡ Demo login granted for {mail_account} (user_id={user_id})")
+        return jsonify({"code": 200, "user_id": user_id, "email": mail_account, "msg": "Demo login successful"})
+
+    if not mail_account or not app_password:
+        return jsonify({"code": 400, "msg": "Email and app specific password cannot be empty"}), 400
 
     try:
         # Test IMAP connection with 10-second timeout
@@ -2373,6 +2369,56 @@ def webhook_generic():
     return jsonify({"code": 200, "incident_id": incident["id"]})
 
 
+@app.route("/api/simulate/incident", methods=["POST"])
+def simulate_incident():
+    """Inject a simulated incident for demo purposes and broadcast live alerts."""
+    data = request.get_json() or {}
+    user_id = data.get("user_id") or request.args.get("user_id")
+    if not user_id:
+        if online_users:
+            user_id = next(iter(online_users.keys()))
+        else:
+            user_id = hashlib.sha256("demo@incicare.com".encode()).hexdigest()[:16]
+
+    title = data.get("title", "").strip() or "Database Cluster Failover Timeout"
+    body = data.get("body", "").strip() or (
+        "CRITICAL: Primary database instance in Singapore Jurong Data Center "
+        "has stopped responding to heartbeat pings. Automatic failover to standby replica timed out. "
+        "API error rates spiking above 35%."
+    )
+    source = data.get("source", "simulation")
+
+    extra = {
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "simulated": True,
+        "source_metadata": {
+            "origin": "demo_simulator",
+            "injected_by": "UI Demo Trigger"
+        }
+    }
+
+    incident = process_alert(user_id, title, body, source_type=source, extra_metadata=extra)
+    return jsonify({
+        "code": 200,
+        "msg": "Simulated incident injected and alert broadcasted successfully",
+        "incident": incident
+    })
+
+
+@app.route("/api/map/config", methods=["GET"])
+def get_map_config():
+    """Return map tile configuration for frontend Leaflet map."""
+    tile_url = os.environ.get("MAP_TILE_URL", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+    api_key = os.environ.get("MAP_API_KEY", "")
+    attribution = os.environ.get("MAP_ATTRIBUTION", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors')
+    return jsonify({
+        "code": 200,
+        "tile_url": tile_url,
+        "api_key": api_key,
+        "attribution": attribution
+    })
+
+
 # ===== SYSLOG UDP LISTENER =====
 
 def _parse_syslog_rfc3164(msg):
@@ -2485,6 +2531,24 @@ def serve_frontend(filename):
 
 # ===== SERVICE STARTUP - FIXED =====
 if __name__ == "__main__":
+    PORT = int(os.environ.get("PORT", 5262))
+    HOST = os.environ.get("HOST", "0.0.0.0")
+    title_str = f"InciCare — Backend Server [Port {PORT}]"
+    if os.name == "nt":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetConsoleTitleW(title_str)
+        except Exception:
+            try:
+                os.system(f'title {title_str}')
+            except Exception:
+                pass
+    try:
+        sys.stdout.write(f"\033]0;{title_str}\007")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
     print("=== InciCare Multi-User Alert Backend ===")
     print("📧 IMAP Email Monitoring — Gmail inbox polling")
     print("🔗 Webhook Endpoints — POST /api/webhook/datadog & /api/webhook/generic")
@@ -2492,8 +2556,8 @@ if __name__ == "__main__":
     print(f"🤖 LLM: {OLLAMA_MODEL} @ {OLLAMA_URL}")
     print(f"📁 Frontend: {FRONTEND_DIR}")
     print(f"📁 Data: {BASE_DATA_DIR}")
-    print("Backend running on http://127.0.0.1:5000")
-    print("Open http://127.0.0.1:5000 in your browser")
+    print(f"Backend running on http://127.0.0.1:{PORT} (Local) and http://0.0.0.0:{PORT} (All interfaces)")
+    print(f"Open http://localhost:{PORT} or http://<your-local-ip>:{PORT} in your browser")
 
     # Start syslog UDP listener in background thread
     syslog_thread = threading.Thread(target=_syslog_udp_listener, args=(515,), daemon=True)
@@ -2524,6 +2588,4 @@ if __name__ == "__main__":
     inactivity_thread = threading.Thread(target=_inactivity_checker_loop, daemon=True)
     inactivity_thread.start()
 
-    # ===== FIX: Correct way to run socketio =====
-    # Use socketio.run() without passing async_mode again
-    socketio.run(app, host='127.0.0.1', port=5000, debug=True, allow_unsafe_werkzeug=True, use_reloader=False)
+    socketio.run(app, host=HOST, port=PORT, debug=True, allow_unsafe_werkzeug=True, use_reloader=False)

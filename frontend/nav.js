@@ -138,10 +138,16 @@ function buildNavSidebar(activeId) {
             </button>
         </div>
     ` : `
-        <button class="nav-user-login-btn" onclick="navOpenLogin()">
-            <i data-lucide="log-in" class="lucide lucide-sm"></i>
-            <span>Sign In</span>
-        </button>
+        <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+            <button class="nav-user-login-btn" onclick="navOpenLogin()">
+                <i data-lucide="log-in" class="lucide lucide-sm"></i>
+                <span>Sign In</span>
+            </button>
+            <button class="nav-user-demo-btn" onclick="navQuickDemo()" style="padding:7px 12px; font-size:12px; border-radius:8px; background:linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2)); border:1px solid rgba(139,92,246,0.4); color:#c7d2fe; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s;">
+                <i data-lucide="zap" class="lucide lucide-sm"></i>
+                <span>Quick Demo</span>
+            </button>
+        </div>
     `;
 
     return `
@@ -267,6 +273,33 @@ function navOpenLogin() {
         modal.classList.add('active');
     } else {
         window.location.href = '/?showLogin=true';
+    }
+}
+
+// ===== QUICK DEMO ACCESS =====
+async function navQuickDemo() {
+    try {
+        const res = await fetch('/api/mail/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'demo@incicare.com', app_pwd: 'demo123456', is_demo: true })
+        });
+        const data = await res.json();
+        if (data.code === 200) {
+            localStorage.setItem(STORAGE_KEY_USER_ID, data.user_id);
+            localStorage.setItem(STORAGE_KEY_EMAIL, 'demo@incicare.com');
+            localStorage.setItem(STORAGE_KEY_APP_PWD, 'demo123456');
+            try {
+                const pingResp = await fetch('/api/ping');
+                const pingData = await pingResp.json();
+                if (pingData && pingData.server_start_time) {
+                    localStorage.setItem('comhub_server_start', pingData.server_start_time);
+                }
+            } catch (err) {}
+            window.location.href = '/';
+        }
+    } catch (e) {
+        console.error('Demo login failed:', e);
     }
 }
 
